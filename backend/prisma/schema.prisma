@@ -1,0 +1,55 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Roles de acceso al back-office y al portal de lancheros.
+enum Role {
+  ADMIN
+  OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Estado de verificación del lanchero. Se valida con el equipo de negocio.
+enum OwnerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(OWNER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  owner Owner?
+
+  @@map("users")
+}
+
+model Owner {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @unique @db.Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  status    OwnerStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("owners")
+}

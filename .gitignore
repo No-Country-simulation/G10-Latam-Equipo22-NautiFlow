@@ -39,3 +39,6 @@ backend/src/generated/
 
 # Docker
 *.pid
+
+# Artefactos de TypeScript
+*.tsbuildinfo
