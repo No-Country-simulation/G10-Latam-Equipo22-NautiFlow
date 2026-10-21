@@ -1,0 +1,71 @@
+name: nautiflow
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      target: development
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # En la red de Compose la base se llama "db".
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/prisma.config.ts:/app/prisma.config.ts
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:${PORT:-3000}/api/v1/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
