@@ -1,0 +1,256 @@
+:root {
+  --color-bg: #f6f8f7;
+  --color-surface: #ffffff;
+  --color-ink: #10262d;
+  --color-muted: #566b72;
+  --color-brand: #0b6b5f;
+  --color-brand-dark: #084e45;
+  --color-accent: #7fd1c1;
+  --color-border: #dbe5e2;
+  --color-error: #b3261e;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgb(16 38 45 / 8%);
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+h1,
+h2 {
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+code {
+  background: #e9f1ef;
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+}
+
+a {
+  color: var(--color-brand);
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.brand {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-brand-dark);
+  text-decoration: none;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.app-nav a {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.app-nav a.active {
+  color: var(--color-brand);
+}
+
+.app-nav a.nav-cta {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.app-main {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4rem) clamp(1rem, 4vw, 2rem);
+  flex: 1;
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.25rem clamp(1rem, 4vw, 3rem);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.hero-section h1 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  max-width: 20ch;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-brand);
+  margin: 0 0 0.75rem;
+}
+
+.lead {
+  max-width: 60ch;
+  color: var(--color-muted);
+  font-size: 1.05rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.75rem 0 2.5rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.65rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--color-brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-brand-dark);
+}
+
+.button-ghost {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-brand-dark);
+}
+
+.button-ghost:hover {
+  background: var(--color-surface);
+}
+
+.feature-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  font-size: 1.05rem;
+}
+
+.card p {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+}
+
+.narrow-section {
+  max-width: 640px;
+}
+
+.status-card {
+  margin-top: 1.5rem;
+}
+
+.status-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+}
+
+.status-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+.status-list dt {
+  color: var(--color-muted);
+}
+
+.status-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-ok {
+  background: #dff3ee;
+  color: var(--color-brand-dark);
+}
+
+.badge-error {
+  background: #fbe3e1;
+  color: var(--color-error);
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.link-back {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
