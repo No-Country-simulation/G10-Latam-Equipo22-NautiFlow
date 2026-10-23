@@ -3,8 +3,10 @@
 PostgreSQL 16 + Prisma 7. El esquema vive en `backend/prisma/schema.prisma`; las migraciones se
 versionan en `backend/prisma/migrations`.
 
-> Modelo inicial implementado: `User` y `Owner`. El resto de las entidades está especificado para
-> las próximas etapas y debe validarse con el referente de negocio.
+> Implementado: `User` y `Owner` (inglés, heredado del esqueleto) más el modelo de flota en
+> español (`Zona`, `Embarcacion`, `EmbarcacionZona`, por D-010). El resto de las entidades está
+> especificado para las próximas etapas y debe validarse con el referente de negocio.
+> La unificación de `User`/`Owner`/`Role` queda pendiente (TECH-14) hasta que mergee US-01.
 
 ## Implementado
 
@@ -30,24 +32,53 @@ versionan en `backend/prisma/migrations`.
 | status | `OwnerStatus` | `PENDING` \| `APPROVED` \| `REJECTED` |
 | createdAt / updatedAt | timestamp | automáticos |
 
+### EstadoEmbarcacion
+
+`PENDIENTE` | `VERIFICADA` | `RECHAZADA` | `INACTIVA`
+
+### Zona
+
+| Campo | Tipo | Reglas |
+| --- | --- | --- |
+| id | UUID | PK, `uuid()` |
+| nombre | string | único |
+| descripcion | string? | opcional |
+| activa | boolean | default `true`; la baja es lógica |
+| createdAt / updatedAt | timestamp | automáticos |
+
+### Embarcacion
+
+| Campo | Tipo | Reglas |
+| --- | --- | --- |
+| id | UUID | PK, `uuid()` |
+| propietarioId | UUID | FK a `Owner`, `onDelete: Restrict` |
+| nombre | string | obligatorio |
+| matricula | string | único |
+| capacidad | int | pasajeros |
+| descripcion | string? | opcional |
+| estado | `EstadoEmbarcacion` | default `PENDIENTE` |
+| createdAt / updatedAt | timestamp | automáticos |
+
+### EmbarcacionZona
+
+Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK.
+
 ## Entidades planificadas
 
 | Entidad | Responsabilidad / campos orientativos |
 | --- | --- |
-| Boat | `ownerId`, nombre/identificador, capacidad, descripción, estado, cobertura |
-| Zone | Zona de cobertura; relación muchos a muchos con `Boat` |
-| BoatDocument | `boatId`/`ownerId`, tipo, `storageKey`, estado de revisión, observación, fechas y admin revisor |
-| Trip | fecha/hora, pasajeros, zona/origen/destino, estado, `boatId` opcional |
+| BoatDocument | `embarcacionId`/`propietarioId`, tipo, `storageKey`, estado de revisión, observación, fechas y admin revisor |
+| Trip | fecha/hora, pasajeros, zona/origen/destino, estado, `embarcacionId` opcional |
 | ReviewToken | `tripId`, `tokenHash`, `expiresAt`, `usedAt`, `createdAt` |
-| Review | `tripId`, `boatId`, `rating` (1–5), `comment`, `createdAt` |
-| EmptyLeg | `tripId` de origen, `boatId`, zona/origen/destino, fecha/hora estimada, estado |
+| Review | `tripId`, `embarcacionId`, `rating` (1–5), `comment`, `createdAt` |
+| EmptyLeg | `tripId` de origen, `embarcacionId`, zona/origen/destino, fecha/hora estimada, estado |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
 ## Relaciones previstas
 
-- Un `Owner` registra varias `Boat`.
-- Una `Boat` cubre varias `Zone` (M:N) y tiene varios documentos.
-- Una `Boat` realiza varios `Trip`.
+- Un `Owner` registra varias `Embarcacion`.
+- Una `Embarcacion` cubre varias `Zona` (M:N) y tendrá varios documentos.
+- Una `Embarcacion` realizará varios `Trip`.
 - Un `Trip` completado habilita como máximo una `Review`.
 - Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa.
 
@@ -81,6 +112,15 @@ npm run prisma:seed                                  # datos de demo
 ```
 
 Prisma 7 no ejecuta el seed automáticamente tras `migrate dev`: hay que invocarlo.
+
+El seed de zonas corre por separado (nombres de dominio en español, D-010):
+
+```bash
+cd backend
+npx tsx prisma/seed-zonas.ts   # Delta del Tigre, San Fernando, Escobar
+```
+
+Se integrará al `seed.ts` principal durante la unificación de nomenclatura (TECH-14).
 
 ## Pendientes de decisión
 
