@@ -43,13 +43,65 @@ model User {
 }
 
 model Owner {
-  id        String      @id @default(uuid()) @db.Uuid
-  userId    String      @unique @db.Uuid
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone     String?
-  status    OwnerStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @unique @db.Uuid
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone        String?
+  status       OwnerStatus   @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  embarcaciones Embarcacion[]
 
   @@map("owners")
+}
+
+/// Estado de verificación de una embarcación frente a la documentación.
+enum EstadoEmbarcacion {
+  PENDIENTE
+  VERIFICADA
+  RECHAZADA
+  INACTIVA
+}
+
+/// Zona de cobertura gestionada por administración.
+model Zona {
+  id            String   @id @default(uuid()) @db.Uuid
+  nombre        String   @unique
+  descripcion   String?
+  activa        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  embarcaciones EmbarcacionZona[]
+
+  @@map("zonas")
+}
+
+/// Embarcación registrada por un lanchero.
+model Embarcacion {
+  id            String            @id @default(uuid()) @db.Uuid
+  propietarioId String            @db.Uuid
+  propietario   Owner             @relation(fields: [propietarioId], references: [id], onDelete: Restrict)
+  nombre        String
+  matricula     String            @unique
+  capacidad     Int
+  descripcion   String?
+  estado        EstadoEmbarcacion @default(PENDIENTE)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  zonas         EmbarcacionZona[]
+
+  @@map("embarcaciones")
+}
+
+/// Cobertura M:N entre embarcación y zona.
+model EmbarcacionZona {
+  embarcacionId String      @db.Uuid
+  zonaId        String      @db.Uuid
+  embarcacion   Embarcacion @relation(fields: [embarcacionId], references: [id], onDelete: Cascade)
+  zona          Zona        @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+
+  @@id([embarcacionId, zonaId])
+  @@map("embarcaciones_zonas")
 }
