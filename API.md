@@ -12,6 +12,43 @@ REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:30
 - Respuestas de error con mensaje claro, sin trazas internas.
 - Documentos privados: no se devuelven URLs públicas permanentes.
 
+## Formato de error
+
+Toda respuesta 4xx o 5xx usa el mismo cuerpo, generado por el filtro global
+(`src/common/filtros/filtro-excepciones-global.ts`):
+
+```json
+{
+  "codigo": "NO_ENCONTRADO",
+  "mensaje": "Zona no encontrada"
+}
+```
+
+En validaciones de entrada, `detalles` lista los errores por campo:
+
+```json
+{
+  "codigo": "DATOS_INVALIDOS",
+  "mensaje": "Parámetros inválidos",
+  "detalles": ["capacidad debe ser un número entero positivo"]
+}
+```
+
+| codigo | HTTP | Cuándo |
+| --- | --- | --- |
+| `DATOS_INVALIDOS` | 400 | Cuerpo o query inválidos |
+| `NO_AUTENTICADO` | 401 | Token ausente o inválido |
+| `NO_AUTORIZADO` | 403 | Rol sin permiso |
+| `NO_ENCONTRADO` | 404 | Recurso inexistente |
+| `CONFLICTO` | 409 | Valor repetido, token ya usado |
+| `ARCHIVO_GRANDE` / `TIPO_NO_SOPORTADO` | 413 / 415 | Carga de documentos |
+| `REGLA_DE_NEGOCIO` | 422 | Regla de negocio incumplida |
+| `DEMASIADAS_PETICIONES` | 429 | Rate limit |
+| `ERROR_INTERNO` | 500 | Error no controlado; el detalle solo va al log |
+
+Los errores de Prisma `P2002` (unicidad) y `P2025` (recurso inexistente) se traducen
+automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
+
 ## Implementado
 
 | Método | Ruta | Rol | Descripción |
@@ -68,14 +105,3 @@ Authorization: Bearer <jwt>
 - JWT en `Authorization: Bearer <token>`.
 - `ADMIN` accede al back-office completo; `OWNER` solo a su perfil, embarcaciones y documentos.
 - El turista no tiene cuenta: entra por un enlace con token de reseña de uso único.
-
-## Reglas de error sugeridas
-
-| Caso | Código |
-| --- | --- |
-| Cuerpo inválido o campos faltantes | 400 |
-| Token ausente o vencido | 401 |
-| Rol sin permiso | 403 |
-| Recurso inexistente | 404 |
-| Conflicto (email repetido, token ya usado) | 409 |
-| Regla de negocio incumplida | 422 |
