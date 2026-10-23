@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
+import { FiltroExcepcionesGlobal } from './common/filtros/filtro-excepciones-global.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +11,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new FiltroExcepcionesGlobal());
   app.enableCors({ origin: config.getOrThrow<string>('CORS_ORIGIN') });
 
   const swaggerConfig = new DocumentBuilder()
