@@ -17,7 +17,8 @@ export function ClientRegistrationPage() {
   if (user) return <Navigate to={roleDashboard(user.role)} replace />;
 
   function update(event: ChangeEvent<HTMLInputElement>) {
-    setValues((current) => ({ ...current, [event.currentTarget.name]: event.currentTarget.value }));
+    const { name, value } = event.currentTarget;
+    setValues((current) => ({ ...current, [name]: value }));
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

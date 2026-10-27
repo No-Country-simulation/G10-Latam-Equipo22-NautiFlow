@@ -33,15 +33,18 @@ describe('OwnerRegistrationPage', () => {
         </AuthProvider>,
       );
 
-      fireEvent.change(await screen.findByLabelText('Nombre y apellido'), { target: { value: 'Ana Navegante' } });
+      fireEvent.change(await screen.findByLabelText('Nombre completo'), { target: { value: 'Ana Navegante' } });
       fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'ana@example.com' } });
       fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '+541112345678' } });
       fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'long-secure-password' } });
       fireEvent.change(screen.getByLabelText('Confirmar contraseña'), { target: { value: 'long-secure-password' } });
-      fireEvent.change(screen.getByLabelText('Nombre de la lancha'), { target: { value: 'Luna' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+      fireEvent.change(screen.getByLabelText('Nombre de la embarcación'), { target: { value: 'Luna' } });
       fireEvent.change(screen.getByLabelText('Matrícula'), { target: { value: 'AB-123' } });
-      fireEvent.change(screen.getByLabelText('Capacidad de pasajeros'), { target: { value: '8' } });
+      fireEvent.change(screen.getByLabelText('Capacidad máxima'), { target: { value: '8' } });
       fireEvent.click(await screen.findByLabelText('Delta del Tigre'));
+      fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
 
       const pdf = new window.File([new Uint8Array([37, 80, 68, 70, 45])], 'document.pdf', { type: 'application/pdf' });
       for (const label of ['Licencia', 'Seguro', 'Antecedentes penales']) {
@@ -49,6 +52,7 @@ describe('OwnerRegistrationPage', () => {
         await user.upload(input, pdf);
         expect(input.files?.[0]?.size).toBe(pdf.size);
       }
+      fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
       fireEvent.submit(screen.getByRole('button', { name: 'Enviar solicitud' }).closest('form')!);
 
       expect(await screen.findByText('La agencia revisará tu solicitud')).toBeInTheDocument();

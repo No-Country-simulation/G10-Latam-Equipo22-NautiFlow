@@ -46,7 +46,8 @@ export function OwnerRegistrationPage() {
   if (user) return <Navigate to={roleDashboard(user.role)} replace />;
 
   function updateValue(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setValues((current) => ({ ...current, [event.currentTarget.name]: event.currentTarget.value }));
+    const { name, value } = event.currentTarget;
+    setValues((current) => ({ ...current, [name]: value }));
   }
 
   function advance() {
