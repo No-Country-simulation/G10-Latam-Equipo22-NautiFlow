@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { FiltroExcepcionesGlobal } from './common/filtros/filtro-excepciones-global.js';
+import { parseCorsOrigins } from './config/cors-origins.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,7 +13,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new FiltroExcepcionesGlobal());
-  app.enableCors({ origin: config.getOrThrow<string>('CORS_ORIGIN') });
+  app.enableCors({
+    origin: parseCorsOrigins(config.getOrThrow<string>('CORS_ORIGIN')),
+    credentials: true,
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('NautiFlow API')

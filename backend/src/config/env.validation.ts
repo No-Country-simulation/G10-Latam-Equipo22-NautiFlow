@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 
 export class EnvVars {
   @IsInt()
@@ -13,6 +13,7 @@ export class EnvVars {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(32)
   JWT_SECRET: string;
 
   @IsString()

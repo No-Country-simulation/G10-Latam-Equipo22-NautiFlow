@@ -10,8 +10,11 @@ export function LandingPage() {
         la agencia opere con información confiable.
       </p>
       <div className="hero-actions">
-        <Link to="/login" className="button">
-          Soy lanchero
+        <Link to="/registro/lanchero" className="button">
+          Incorporarme como lanchero
+        </Link>
+        <Link to="/registro/cliente" className="button button-ghost">
+          Crear cuenta de cliente
         </Link>
         <Link to="/estado" className="button button-ghost">
           Ver estado del sistema
