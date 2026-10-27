@@ -13,6 +13,7 @@ datasource db {
 enum Role {
   ADMIN
   OWNER
+  CLIENT
 }
 
 enum UserStatus {
@@ -27,6 +28,27 @@ enum OwnerStatus {
   REJECTED
 }
 
+enum DocumentType {
+  LICENSE
+  INSURANCE
+  BACKGROUND_CHECK
+  PHOTO
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TripStatus {
+  PENDING
+  ASSIGNED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String
@@ -38,6 +60,10 @@ model User {
   updatedAt    DateTime   @updatedAt
 
   owner Owner?
+  client Cliente?
+  ownerReviews Owner[] @relation("OwnerReviewedBy")
+  reviewedDocuments OwnerDocument[] @relation("DocumentReviewedBy")
+  createdTrips Trip[] @relation("TripCreatedBy")
 
   @@map("users")
 }
@@ -47,10 +73,16 @@ model Owner {
   userId       String        @unique @db.Uuid
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone        String?
+  whatsappPhone String?
   status       OwnerStatus   @default(PENDING)
+  reviewNote   String?
+  reviewedAt   DateTime?
+  reviewedById String?       @db.Uuid
+  reviewedBy   User?         @relation("OwnerReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   embarcaciones Embarcacion[]
+  documents OwnerDocument[]
 
   @@map("owners")
 }
@@ -91,6 +123,9 @@ model Embarcacion {
   updatedAt     DateTime          @updatedAt
 
   zonas         EmbarcacionZona[]
+  documents OwnerDocument[]
+  viajes Trip[]
+  reviews Review[]
 
   @@map("embarcaciones")
 }
@@ -104,4 +139,90 @@ model EmbarcacionZona {
 
   @@id([embarcacionId, zonaId])
   @@map("embarcaciones_zonas")
+}
+
+/// Documentos privados. El contenido se guarda en PostgreSQL y solo se entrega con autorización.
+model OwnerDocument {
+  id           String         @id @default(uuid()) @db.Uuid
+  ownerId      String         @db.Uuid
+  owner        Owner          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  boatId       String?        @db.Uuid
+  boat         Embarcacion?   @relation(fields: [boatId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  status       DocumentStatus @default(PENDING)
+  filename     String
+  mimeType     String
+  size         Int
+  content      Bytes
+  reviewNote   String?
+  reviewedAt   DateTime?
+  reviewedById String?        @db.Uuid
+  reviewedBy   User?          @relation("DocumentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+
+  @@index([ownerId, type])
+  @@index([boatId, type])
+  @@map("owner_documents")
+}
+
+/// Cliente de la agencia; no tiene cuenta ni mecanismo de autenticación.
+model Cliente {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @unique @db.Uuid
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  nombre    String
+  telefono  String
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  viajes    Trip[]
+
+  @@map("clientes")
+}
+
+model Trip {
+  id             String     @id @default(uuid()) @db.Uuid
+  clienteId      String     @db.Uuid
+  cliente        Cliente    @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  embarcacionId  String?    @db.Uuid
+  embarcacion    Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
+  createdById    String     @db.Uuid
+  createdBy      User       @relation("TripCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  scheduledAt    DateTime
+  passengerCount Int
+  origin         String
+  destination    String
+  status         TripStatus @default(PENDING)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  reviewToken    ReviewToken?
+  review         Review?
+
+  @@index([status, scheduledAt])
+  @@map("trips")
+}
+
+model ReviewToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  tripId    String   @unique @db.Uuid
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("review_tokens")
+}
+
+model Review {
+  id            String      @id @default(uuid()) @db.Uuid
+  tripId        String      @unique @db.Uuid
+  trip          Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  embarcacionId String?     @db.Uuid
+  embarcacion   Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: SetNull)
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  @@map("reviews")
 }

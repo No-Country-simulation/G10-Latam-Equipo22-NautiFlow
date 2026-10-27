@@ -71,17 +71,23 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 
 | Módulo | Método y ruta | Rol | Uso |
 | --- | --- | --- | --- |
-| Auth | `POST /auth/register` | Público | Registro de lanchero |
+| Auth | `POST /auth/register/lanchero` | Público | Registro multipart de lanchero, primera lancha y documentos |
+| Auth | `POST /auth/register` | Público | Alias multipart legado de registro de lanchero |
+| Auth | `POST /auth/register/cliente` | Público | Alta de cuenta CLIENT asociada a Cliente |
 | Auth | `POST /auth/login` | Público | Login y emisión de JWT |
+| Auth | `POST /auth/logout` | Público | Expirar la cookie de sesión del navegador |
 | Auth | `GET /auth/me` | Autenticado | Usuario actual |
-| Boats | `POST /boats` | Lanchero | Crear embarcación |
-| Boats | `GET /boats/me` | Lanchero | Listar embarcaciones propias |
-| Boats | `PATCH /boats/:id` | Lanchero | Actualizar embarcación propia |
-| Documents | `POST /boats/:id/documents` | Lanchero | Cargar documento |
-| Verification | `GET /admin/documents?status=pending` | Admin | Bandeja de pendientes |
-| Verification | `PATCH /admin/documents/:id/review` | Admin | Aprobar o rechazar |
-| Boats | `GET /admin/boats/search` | Admin | Filtrar embarcaciones elegibles |
+| Owners | `GET /owners/me/solicitud` | OWNER | Consultar perfil, embarcación y estado de documentos propios |
+| Zones | `GET /zones` | Público | Zonas de cobertura activas |
+| Verification | `GET /admin/solicitudes?status=PENDING` | ADMIN | Bandeja de solicitudes |
+| Verification | `PATCH /admin/solicitudes/:id/aprobar` | ADMIN | Aprobar perfil y embarcaciones tras revisar documentos |
+| Verification | `PATCH /admin/solicitudes/:id/rechazar` | ADMIN | Rechazar solicitud con nota |
+| Documents | `GET /admin/documents` | ADMIN | Listar documentos pendientes sin sus bytes |
+| Documents | `PATCH /admin/documents/:id/review` | ADMIN | Aprobar o rechazar un documento |
+| Documents | `GET /documents/:id/file` | Propietario o ADMIN | Descargar documento privado |
+| Boats | `GET /boats/admin/approved` | ADMIN | Listar embarcaciones elegibles para asignación |
 | Trips | `POST /admin/trips` | Admin | Registrar solicitud de viaje |
+| Trips | `GET /admin/trips` | ADMIN | Listar viajes y clientes |
 | Trips | `PATCH /admin/trips/:id/assign` | Admin | Asignar embarcación |
 | Trips | `PATCH /admin/trips/:id/status` | Admin | Cambiar estado |
 | Reviews | `POST /admin/trips/:id/review-link` | Admin | Generar enlace único |
@@ -90,6 +96,12 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | Empty legs | `POST /admin/empty-legs` | Admin | Registrar tramo vacío |
 | Empty legs | `GET /admin/empty-legs` | Admin | Listar tramos disponibles |
 | Notifications | `GET /notifications` | Autenticado | Consultar notificaciones |
+
+El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, `SameSite=Lax`, con
+`Path=/api/v1` y expiración configurada por `JWT_EXPIRES_IN`; en producción también lleva `Secure`.
+`GET /auth/me` devuelve `{ "user": { "id", "name", "email", "role", "ownerStatus" } }`.
+El logout expira la cookie en el cliente; el JWT stateless no se revoca en el servidor y sigue
+siendo válido hasta su vencimiento si fue copiado fuera del navegador.
 
 ## Ejemplo de revisión de documento
 
@@ -100,8 +112,33 @@ Authorization: Bearer <jwt>
 { "decision": "APPROVED", "comment": "Documentación legible y vigente" }
 ```
 
-## Autenticación prevista
+## Contratos de registro y operación
 
-- JWT en `Authorization: Bearer <token>`.
-- `ADMIN` accede al back-office completo; `OWNER` solo a su perfil, embarcaciones y documentos.
+`POST /api/v1/auth/register/lanchero` recibe `multipart/form-data`: `name`, `email`, `password`,
+`phone`, `whatsappPhone` opcional, `boatName`, `matricula`, `capacidad`, `descripcion` opcional,
+`zonaIds` como JSON array y archivos `license`, `insurance`, `backgroundCheck` (obligatorios),
+`photos` (opcional, máximo cinco). Se aceptan PDF/JPEG/PNG/WebP de hasta 5 MB por archivo. El
+backend asigna `OWNER`, perfil/documentos/lancha en estado pendiente y crea todo en una transacción.
+
+`POST /api/v1/auth/register/cliente` recibe JSON con `firstName`, `lastName`, `email`, `phone` y
+`password`. El servidor asigna exclusivamente el rol `CLIENT`, hashea la contraseña y enlaza la
+cuenta con el modelo `Cliente` existente. El alta de ambos tipos responde `202` con un mensaje
+genérico y no inicia sesión automáticamente para evitar enumerar correos duplicados. Después del
+alta, ambos pueden utilizar `POST /auth/login`; el admin inicial se crea solo con el seed.
+
+Las decisiones admin reciben `{ "decision": "APPROVED" | "REJECTED", "note": "..." }`. Aprobar
+un perfil requiere que licencia, seguro y antecedentes estén aprobados. Las operaciones de viaje
+crean o reutilizan cliente por email opcional; solo asignan lanchas y lancheros aprobados con
+capacidad suficiente. No hay endpoint ni formulario público de alta ADMIN: el primer administrador
+se crea con el seed.
+
+Los enlaces de reseña contienen 32 bytes aleatorios codificados en base64url. En la base solo se
+guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los consume atómicamente.
+`PUBLIC_APP_URL` configura el origen que devuelve el enlace.
+
+## Autenticación
+
+- JWT en cookie HttpOnly (también se acepta `Authorization: Bearer <token>` para clientes API).
+- `ADMIN` accede a revisión y viajes; `OWNER` solo a su estado y sus documentos.
+- `CLIENT` solo puede acceder a su dashboard y a enlaces públicos de reseña; no hay reservas públicas.
 - El turista no tiene cuenta: entra por un enlace con token de reseña de uso único.

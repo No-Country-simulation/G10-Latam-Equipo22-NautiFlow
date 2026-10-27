@@ -1,7 +1,21 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Role } from '../generated/prisma/client.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import type { AuthenticatedRequest } from '../auth/types.js';
+import { OwnersService } from './owners.service.js';
 
-// Perfil del lanchero y su estado de verificación (US-02, US-05).
 @ApiTags('owners')
 @Controller('owners')
-export class OwnersController {}
+export class OwnersController {
+	constructor(private readonly ownersService: OwnersService) {}
+
+	@Get('me/solicitud')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.OWNER)
+	getMyRequest(@Req() request: AuthenticatedRequest) {
+		return this.ownersService.getMyRequest(request.user!.id);
+	}
+}

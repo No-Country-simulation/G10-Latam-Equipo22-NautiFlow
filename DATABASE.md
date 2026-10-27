@@ -3,9 +3,7 @@
 PostgreSQL 16 + Prisma 7. El esquema vive en `backend/prisma/schema.prisma`; las migraciones se
 versionan en `backend/prisma/migrations`.
 
-> Implementado: `User` y `Owner` (inglés, heredado del esqueleto) más el modelo de flota en
-> español (`Zona`, `Embarcacion`, `EmbarcacionZona`, por D-010). El resto de las entidades está
-> especificado para las próximas etapas y debe validarse con el referente de negocio.
+> Implementado: `User`, `Owner`, flota, documentos privados, clientes, viajes y reseñas/token.
 > La unificación de `User`/`Owner`/`Role` queda pendiente (TECH-14) hasta que mergee US-01.
 
 ## Implementado
@@ -18,7 +16,7 @@ versionan en `backend/prisma/migrations`.
 | name | string | obligatorio |
 | email | string | único |
 | passwordHash | string | hash, nunca texto plano |
-| role | `Role` | `ADMIN` \| `OWNER` (default `OWNER`) |
+| role | `Role` | `ADMIN` \| `OWNER` \| `CLIENT` (default `OWNER`; el cliente y admin los asigna el backend) |
 | status | `UserStatus` | `ACTIVE` \| `INACTIVE` (default `ACTIVE`) |
 | createdAt / updatedAt | timestamp | automáticos |
 
@@ -29,7 +27,15 @@ versionan en `backend/prisma/migrations`.
 | id | UUID | PK |
 | userId | UUID | único, FK a `User` con `onDelete: Cascade` |
 | phone | string? | contacto |
+| whatsappPhone | string? | contacto WhatsApp opcional |
 | status | `OwnerStatus` | `PENDING` \| `APPROVED` \| `REJECTED` |
+| reviewNote / reviewedAt / reviewedById | texto / timestamp / UUID? | auditoría de revisión |
+
+### Cliente
+
+Un cliente operativo puede no tener cuenta. Cuando crea una cuenta, `userId` enlaza el registro a
+un `User` con rol `CLIENT`; el cliente no puede escoger su rol. Las reseñas usan enlaces únicos y
+no requieren cuenta.
 | createdAt / updatedAt | timestamp | automáticos |
 
 ### EstadoEmbarcacion
@@ -63,14 +69,15 @@ versionan en `backend/prisma/migrations`.
 
 Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK.
 
-## Entidades planificadas
+## Entidades operativas
 
 | Entidad | Responsabilidad / campos orientativos |
 | --- | --- |
-| BoatDocument | `embarcacionId`/`propietarioId`, tipo, `storageKey`, estado de revisión, observación, fechas y admin revisor |
-| Trip | fecha/hora, pasajeros, zona/origen/destino, estado, `embarcacionId` opcional |
-| ReviewToken | `tripId`, `tokenHash`, `expiresAt`, `usedAt`, `createdAt` |
-| Review | `tripId`, `embarcacionId`, `rating` (1–5), `comment`, `createdAt` |
+| OwnerDocument | owner/boat, tipo, bytes privados, MIME/size, estado, observación, fechas y admin revisor |
+| Cliente | nombre, teléfono, email opcional único; no tiene cuenta |
+| Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional |
+| ReviewToken | trip único, hash SHA-256, expiración, uso y creación |
+| Review | trip único, embarcación opcional, rating (1–5), comentario |
 | EmptyLeg | `tripId` de origen, `embarcacionId`, zona/origen/destino, fecha/hora estimada, estado |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
@@ -78,7 +85,7 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 
 - Un `Owner` registra varias `Embarcacion`.
 - Una `Embarcacion` cubre varias `Zona` (M:N) y tendrá varios documentos.
-- Una `Embarcacion` realizará varios `Trip`.
+- Una `Embarcacion` realizará varios `Trip` y podrá recibir varias reseñas.
 - Un `Trip` completado habilita como máximo una `Review`.
 - Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa.
 
@@ -100,6 +107,8 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Una embarcación con documentos rechazados no aparece como elegible.
 - La asignación de viaje es una acción explícita del administrador.
 - Todo documento registra revisor, fecha y decisión.
+- `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
+- Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
 
 ## Trabajo con migraciones
 
@@ -124,6 +133,5 @@ Se integrará al `seed.ts` principal durante la unificación de nomenclatura (TE
 
 ## Pendientes de decisión
 
-- Nivel de aprobación: propietario, embarcación, documento o combinación (ver `DECISIONS.md`).
 - Cómo se modela disponibilidad por fecha y horario.
 - Campos obligatorios y representación de origen/destino del viaje.

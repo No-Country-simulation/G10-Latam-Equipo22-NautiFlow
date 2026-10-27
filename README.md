@@ -26,6 +26,7 @@ Requisitos: Docker Desktop y Git.
 git clone https://github.com/No-Country-simulation/G10-Latam-Equipo22-NautiFlow.git
 cd G10-Latam-Equipo22-NautiFlow
 cp .env.example .env
+# Editar .env: usar un JWT_SECRET aleatorio y una clave personal para el admin de desarrollo.
 docker compose up -d --build
 docker compose exec backend npx prisma migrate deploy
 docker compose exec backend npm run prisma:seed
@@ -38,6 +39,59 @@ URLs:
 - Swagger: http://localhost:3000/api/docs
 
 > En Windows/PowerShell, `cp` equivale a `Copy-Item .env.example .env`.
+
+### Autenticación
+
+Los roles son `OWNER` (lanchero), `CLIENT` (cliente con cuenta) y `ADMIN` (back-office). El login
+es común y redirige según el rol devuelto por la API. Las sesiones usan cookie `HttpOnly`,
+`SameSite=Lax` y expiración `JWT_EXPIRES_IN`; en producción también `Secure`. El navegador no
+puede leer ni persistir el JWT. `POST /api/v1/auth/logout` borra la cookie del navegador; un token
+copiado manualmente sigue válido hasta expirar.
+
+`POST /api/v1/auth/register/lanchero` crea cuenta, solicitud pendiente, primera embarcación y
+documentos en una transacción. Adjunta licencia, seguro y antecedentes (PDF/JPEG/PNG/WebP, máximo
+5 MiB por archivo). Para probar el rol `ADMIN`, personalizá `SEED_ADMIN_EMAIL` y
+`SEED_ADMIN_PASSWORD` en `.env` antes de correr `docker compose exec backend npm run prisma:seed`.
+El seed también carga las zonas iniciales. En producción configurá secretos propios y
+`PUBLIC_APP_URL`; nunca uses las claves de ejemplo.
+
+`POST /api/v1/auth/register/cliente` recibe nombre, apellido, email, teléfono y contraseña; el
+servidor asigna `CLIENT` y asocia la cuenta al modelo `Cliente`. Ambos registros responden de forma
+genérica y requieren iniciar sesión después. Ejecutá `docker compose exec backend npx prisma migrate
+deploy` para aplicar también la migración `client_account_role`.
+
+El alta ADMIN es solo por seed controlado (no hay autorregistro/invitación). La agencia revisa
+documentos en `ADMIN → Solicitudes`, aprueba el perfil y luego gestiona viajes/clientes desde
+`ADMIN → Viajes`. Los clientes con cuenta usan el rol `CLIENT`; el turista también puede reseñar
+sin crear cuenta. Al completar un viaje, el admin genera un enlace válido por 14 días y de un solo
+uso. Documentos se guardan como bytes privados en
+PostgreSQL y se descargan únicamente con sesión del propietario o admin.
+
+Rutas protegidas: `/owner/dashboard`, `/owner/solicitud`, `/client/dashboard`, `/admin/dashboard`,
+`/admin/solicitudes` y `/admin/viajes`; `/dashboard` redirige según el rol. `/reviews/:token` es
+pública y no requiere cuenta.
+
+#### Cuentas demo locales
+
+Solo para desarrollo, con los contenedores arriba, ejecutá en PowerShell. El seed requiere el flag
+explícito, `NODE_ENV=development`, genera hashes bcrypt y usa `upsert` sin actualizar cuentas
+existentes. Las contraseñas se pasan al proceso, no se guardan en `.env` ni en el repositorio.
+
+```powershell
+docker compose exec -e NODE_ENV=development -e SEED_DEMO_USERS=true -e SEED_ADMIN_EMAIL= -e SEED_ADMIN_PASSWORD= -e "SEED_DEMO_OWNER_PASSWORD=LanchaDev2026!" -e "SEED_DEMO_CLIENT_PASSWORD=ClienteDev2026!" -e "SEED_DEMO_ADMIN_PASSWORD=AdminDev2026!" backend npm run prisma:seed
+```
+
+| Cuenta | Email | Rol | Dashboard |
+| --- | --- | --- | --- |
+| Carlos Ramírez | `lanchero@nautiflow.test` | `OWNER` (pendiente) | `/owner/dashboard` |
+| María González | `cliente@nautiflow.test` | `CLIENT` | `/client/dashboard` |
+| Admin NautiFlow | `admin@nautiflow.test` | `ADMIN` | `/admin/dashboard` |
+
+Después del seed, iniciar sesión en `/login` con el email y contraseña de cada cuenta. El OWNER
+demo tiene solo el perfil pendiente, sin documentación ni embarcación, para acceder al panel; la
+aprobación normal requiere documentos revisados. Para probar ese circuito, enviá una solicitud
+real desde `/registro/lanchero` y revisala con el ADMIN demo. El seed nunca cambia contraseñas,
+roles o relaciones de cuentas que ya existan. No ejecutes estas credenciales en producción.
 
 ## Trabajo sin Docker (opcional)
 
