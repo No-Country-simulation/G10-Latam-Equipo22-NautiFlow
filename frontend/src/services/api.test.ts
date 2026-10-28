@@ -61,4 +61,49 @@ describe('api', () => {
 
     await expect(api.get('/auth/me')).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('muestra el mensaje del filtro del backend', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse({ codigo: 'NO_AUTENTICADO', mensaje: 'Correo o contraseña incorrectos.' }, 401),
+      ),
+    );
+
+    await expect(api.get('/auth/me')).rejects.toThrow('Correo o contraseña incorrectos.');
+  });
+
+  it('incluye los detalles de validación junto al mensaje', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          { codigo: 'DATOS_INVALIDOS', mensaje: 'Parámetros inválidos', detalles: ['email debe ser un email'] },
+          400,
+        ),
+      ),
+    );
+
+    await expect(api.post('/auth/login', {})).rejects.toThrow(
+      'Parámetros inválidos: email debe ser un email',
+    );
+  });
+
+  it('respeta el formato message por defecto de Nest', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ message: 'Bad Request', statusCode: 400 }, 400)),
+    );
+
+    await expect(api.get('/auth/me')).rejects.toThrow('Bad Request');
+  });
+
+  it('concatena los campos cuando message viene como arreglo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ message: ['campo requerido', 'formato inválido'] }, 400)),
+    );
+
+    await expect(api.get('/auth/me')).rejects.toThrow('campo requerido, formato inválido');
+  });
 });
