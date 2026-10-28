@@ -16,6 +16,25 @@ function getApiUrl(): string {
   return url;
 }
 
+type CuerpoError = { mensaje?: unknown; message?: unknown; detalles?: unknown };
+
+function textoDeError(body: CuerpoError): string | undefined {
+  const principal =
+    typeof body.mensaje === 'string' && body.mensaje
+      ? body.mensaje
+      : typeof body.message === 'string' && body.message
+        ? body.message
+        : undefined;
+  const secundarios = Array.isArray(body.message)
+    ? body.message
+    : Array.isArray(body.detalles)
+      ? body.detalles
+      : [];
+  const detalle = secundarios.filter((item): item is string => typeof item === 'string');
+  if (principal && detalle.length > 0) return `${principal}: ${detalle.join(', ')}`;
+  return principal ?? (detalle.length > 0 ? detalle.join(', ') : undefined);
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !(init.body instanceof FormData)) {
@@ -37,8 +56,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     let message = detail;
     try {
-      const body = JSON.parse(detail) as { message?: string | string[] };
-      if (body.message) message = Array.isArray(body.message) ? body.message.join(' ') : body.message;
+      const texto = textoDeError(JSON.parse(detail) as CuerpoError);
+      if (texto) message = texto;
     } catch {
       message = detail;
     }
