@@ -9,7 +9,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class CrearEmbarcacionDto {
+export class CreateBoatDto {
   @ApiProperty({ example: 'Lancha Delta 1' })
   @IsString()
   @IsNotEmpty()

@@ -6,7 +6,7 @@ REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:30
 
 - DTOs de entrada y salida: nunca se exponen entidades Prisma.
 - Validación en backend con `class-validator`; el frontend valida como refuerzo.
-- Guards por rol (`ADMIN`, `OWNER`) y por recurso.
+- Guards por rol (`ADMIN`, `OWNER`, `CLIENT`) y por recurso.
 - Códigos: `200/201`, `400`, `401`, `403`, `404`, `409`, `422`.
 - Paginación en listados administrativos: `?page=1&limit=20` (máx. 100).
 - Respuestas de error con mensaje claro, sin trazas internas.
@@ -54,6 +54,36 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | Método | Ruta | Rol | Descripción |
 | --- | --- | --- | --- |
 | GET | `/health` | Público | Estado de la API y conexión a PostgreSQL. `200` si la base responde, `503` si está caída |
+| POST | `/auth/register/lanchero` | Público | Registro multipart de lanchero, primera lancha y documentos |
+| POST | `/auth/register` | Público | Alias multipart legado de registro de lanchero |
+| POST | `/auth/register/cliente` | Público | Alta de cuenta CLIENT asociada a Cliente |
+| POST | `/auth/login` | Público | Login y emisión de JWT en cookie HttpOnly |
+| POST | `/auth/logout` | Público | Expirar la cookie de sesión |
+| GET | `/auth/me` | Autenticado | Usuario actual de la sesión |
+| GET | `/owners/me/solicitud` | OWNER | Perfil, embarcaciones y documentos propios |
+| GET | `/zones` | Público | Zonas de cobertura activas |
+| GET | `/zones/admin` | ADMIN | Todas las zonas, activas e inactivas |
+| POST | `/zones` | ADMIN | Crear zona de cobertura |
+| PATCH | `/zones/:id` | ADMIN | Editar zona de cobertura |
+| DELETE | `/zones/:id` | ADMIN | Desactivar zona de cobertura |
+| GET | `/admin/solicitudes?status=PENDING` | ADMIN | Bandeja de solicitudes |
+| PATCH | `/admin/solicitudes/:id/aprobar` | ADMIN | Aprobar perfil y embarcaciones tras revisar documentos |
+| PATCH | `/admin/solicitudes/:id/rechazar` | ADMIN | Rechazar solicitud con nota |
+| GET | `/admin/documents` | ADMIN | Listar documentos pendientes sin sus bytes |
+| PATCH | `/admin/documents/:id/review` | ADMIN | Aprobar o rechazar un documento |
+| GET | `/documents/:id/file` | Propietario o ADMIN | Descargar documento privado |
+| GET | `/boats/admin/approved` | ADMIN | Listar embarcaciones elegibles para asignación |
+| GET | `/boats/mine` | OWNER | Embarcaciones propias con su cobertura |
+| GET | `/boats/:id` | OWNER | Detalle de una embarcación propia |
+| POST | `/boats` | OWNER | Alta de embarcación propia |
+| PATCH | `/boats/:id` | OWNER | Editar embarcación propia y su cobertura |
+| POST | `/admin/trips` | ADMIN | Registrar solicitud de viaje |
+| GET | `/admin/trips` | ADMIN | Listar viajes y clientes |
+| PATCH | `/admin/trips/:id/assign` | ADMIN | Asignar embarcación |
+| PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
+| POST | `/admin/trips/:id/review-link` | ADMIN | Generar enlace único de reseña |
+| GET | `/public/reviews/:token` | Público | Validar token y contexto |
+| POST | `/public/reviews/:token` | Público | Enviar calificación |
 
 ### `GET /api/v1/health`
 
@@ -71,28 +101,6 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 
 | Módulo | Método y ruta | Rol | Uso |
 | --- | --- | --- | --- |
-| Auth | `POST /auth/register/lanchero` | Público | Registro multipart de lanchero, primera lancha y documentos |
-| Auth | `POST /auth/register` | Público | Alias multipart legado de registro de lanchero |
-| Auth | `POST /auth/register/cliente` | Público | Alta de cuenta CLIENT asociada a Cliente |
-| Auth | `POST /auth/login` | Público | Login y emisión de JWT |
-| Auth | `POST /auth/logout` | Público | Expirar la cookie de sesión del navegador |
-| Auth | `GET /auth/me` | Autenticado | Usuario actual |
-| Owners | `GET /owners/me/solicitud` | OWNER | Consultar perfil, embarcación y estado de documentos propios |
-| Zones | `GET /zones` | Público | Zonas de cobertura activas |
-| Verification | `GET /admin/solicitudes?status=PENDING` | ADMIN | Bandeja de solicitudes |
-| Verification | `PATCH /admin/solicitudes/:id/aprobar` | ADMIN | Aprobar perfil y embarcaciones tras revisar documentos |
-| Verification | `PATCH /admin/solicitudes/:id/rechazar` | ADMIN | Rechazar solicitud con nota |
-| Documents | `GET /admin/documents` | ADMIN | Listar documentos pendientes sin sus bytes |
-| Documents | `PATCH /admin/documents/:id/review` | ADMIN | Aprobar o rechazar un documento |
-| Documents | `GET /documents/:id/file` | Propietario o ADMIN | Descargar documento privado |
-| Boats | `GET /boats/admin/approved` | ADMIN | Listar embarcaciones elegibles para asignación |
-| Trips | `POST /admin/trips` | Admin | Registrar solicitud de viaje |
-| Trips | `GET /admin/trips` | ADMIN | Listar viajes y clientes |
-| Trips | `PATCH /admin/trips/:id/assign` | Admin | Asignar embarcación |
-| Trips | `PATCH /admin/trips/:id/status` | Admin | Cambiar estado |
-| Reviews | `POST /admin/trips/:id/review-link` | Admin | Generar enlace único |
-| Reviews | `GET /public/reviews/:token` | Público | Validar token y contexto |
-| Reviews | `POST /public/reviews/:token` | Público | Enviar calificación |
 | Empty legs | `POST /admin/empty-legs` | Admin | Registrar tramo vacío |
 | Empty legs | `GET /admin/empty-legs` | Admin | Listar tramos disponibles |
 | Notifications | `GET /notifications` | Autenticado | Consultar notificaciones |
@@ -139,6 +147,6 @@ guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los c
 ## Autenticación
 
 - JWT en cookie HttpOnly (también se acepta `Authorization: Bearer <token>` para clientes API).
-- `ADMIN` accede a revisión y viajes; `OWNER` solo a su estado y sus documentos.
+- `ADMIN` accede a revisión, documentos y viajes; `OWNER` a su estado, sus documentos y sus embarcaciones.
 - `CLIENT` solo puede acceder a su dashboard y a enlaces públicos de reseña; no hay reservas públicas.
 - El turista no tiene cuenta: entra por un enlace con token de reseña de uso único.

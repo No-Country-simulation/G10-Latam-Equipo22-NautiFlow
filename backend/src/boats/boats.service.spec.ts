@@ -1,9 +1,10 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client.js';
+import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { EmbarcacionesService } from './embarcaciones.service.js';
+import { BoatsService } from './boats.service.js';
 
+const userId = 'uuid-usuario';
 const propietarioId = 'uuid-duenio';
 const embarcacionBase = {
   id: 'uuid-embarcacion',
@@ -26,16 +27,18 @@ function errorPrisma(code: string) {
 }
 
 function createService(prismaMock: object) {
-  return new EmbarcacionesService(prismaMock as unknown as PrismaService);
+  return new BoatsService(prismaMock as unknown as PrismaService);
 }
 
 function prismaConMocks({
+  ownerFindUnique,
   findMany,
   findFirst,
   create,
   update,
   zonaFindMany,
 }: {
+  ownerFindUnique?: ReturnType<typeof vi.fn>;
   findMany?: ReturnType<typeof vi.fn>;
   findFirst?: ReturnType<typeof vi.fn>;
   create?: ReturnType<typeof vi.fn>;
@@ -43,6 +46,9 @@ function prismaConMocks({
   zonaFindMany?: ReturnType<typeof vi.fn>;
 }) {
   return {
+    owner: {
+      findUnique: ownerFindUnique ?? vi.fn().mockResolvedValue({ id: propietarioId }),
+    },
     embarcacion: {
       findMany: findMany ?? vi.fn(),
       findFirst: findFirst ?? vi.fn(),
@@ -53,17 +59,62 @@ function prismaConMocks({
   };
 }
 
-describe('EmbarcacionesService', () => {
+describe('BoatsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('buscarPropia', () => {
+  describe('listApproved', () => {
+    it('lista embarcaciones verificadas de propietarios aprobados', async () => {
+      const findMany = vi.fn().mockResolvedValue([embarcacionBase]);
+      const service = createService(prismaConMocks({ findMany }));
+
+      const result = await service.listApproved();
+
+      expect(result).toEqual([embarcacionBase]);
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            estado: EstadoEmbarcacion.VERIFICADA,
+            propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+          },
+        }),
+      );
+    });
+  });
+
+  describe('listMine', () => {
+    it('resuelve la ficha del propietario y lista sus embarcaciones', async () => {
+      const findMany = vi.fn().mockResolvedValue([embarcacionBase]);
+      const ownerFindUnique = vi.fn().mockResolvedValue({ id: propietarioId });
+      const service = createService(prismaConMocks({ ownerFindUnique, findMany }));
+
+      const result = await service.listMine(userId);
+
+      expect(result).toEqual([embarcacionBase]);
+      expect(ownerFindUnique).toHaveBeenCalledWith({
+        where: { userId },
+        select: { id: true },
+      });
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { propietarioId } }),
+      );
+    });
+
+    it('lanza 404 si el usuario no tiene ficha de propietario', async () => {
+      const ownerFindUnique = vi.fn().mockResolvedValue(null);
+      const service = createService(prismaConMocks({ ownerFindUnique }));
+
+      await expect(service.listMine(userId)).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getMine', () => {
     it('devuelve la embarcación del propietario', async () => {
       const findFirst = vi.fn().mockResolvedValue(embarcacionBase);
       const service = createService(prismaConMocks({ findFirst }));
 
-      const result = await service.buscarPropia('uuid-embarcacion', propietarioId);
+      const result = await service.getMine('uuid-embarcacion', userId);
 
       expect(result).toEqual(embarcacionBase);
       expect(findFirst).toHaveBeenCalledWith({
@@ -75,18 +126,16 @@ describe('EmbarcacionesService', () => {
       const findFirst = vi.fn().mockResolvedValue(null);
       const service = createService(prismaConMocks({ findFirst }));
 
-      await expect(service.buscarPropia('id-ajena', propietarioId)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(service.getMine('id-ajena', userId)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
-  describe('crear', () => {
+  describe('create', () => {
     it('crea la embarcación sin zonas cuando no se indican', async () => {
       const create = vi.fn().mockResolvedValue(embarcacionBase);
       const service = createService(prismaConMocks({ create }));
 
-      const result = await service.crear(propietarioId, {
+      const result = await service.create(userId, {
         nombre: 'Lancha Delta 1',
         matricula: 'ABC-123',
         capacidad: 8,
@@ -110,7 +159,7 @@ describe('EmbarcacionesService', () => {
       const service = createService(prismaConMocks({ create }));
 
       await expect(
-        service.crear(propietarioId, { nombre: 'X', matricula: 'ABC-123', capacidad: 4 }),
+        service.create(userId, { nombre: 'X', matricula: 'ABC-123', capacidad: 4 }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -119,7 +168,7 @@ describe('EmbarcacionesService', () => {
       const service = createService(prismaConMocks({ zonaFindMany }));
 
       await expect(
-        service.crear(propietarioId, {
+        service.create(userId, {
           nombre: 'X',
           matricula: 'XYZ-9',
           capacidad: 4,
@@ -137,7 +186,7 @@ describe('EmbarcacionesService', () => {
       const create = vi.fn().mockResolvedValue(embarcacionBase);
       const service = createService(prismaConMocks({ create, zonaFindMany }));
 
-      await service.crear(propietarioId, {
+      await service.create(userId, {
         nombre: 'X',
         matricula: 'XYZ-9',
         capacidad: 4,
@@ -154,13 +203,13 @@ describe('EmbarcacionesService', () => {
     });
   });
 
-  describe('actualizar', () => {
+  describe('update', () => {
     it('actualiza campos de la embarcación propia', async () => {
       const findFirst = vi.fn().mockResolvedValue(embarcacionBase);
       const update = vi.fn().mockResolvedValue({ ...embarcacionBase, nombre: 'Nuevo nombre' });
       const service = createService(prismaConMocks({ findFirst, update }));
 
-      const result = await service.actualizar('uuid-embarcacion', propietarioId, {
+      const result = await service.update('uuid-embarcacion', userId, {
         nombre: 'Nuevo nombre',
       });
 
@@ -175,7 +224,7 @@ describe('EmbarcacionesService', () => {
       const service = createService(prismaConMocks({ findFirst }));
 
       await expect(
-        service.actualizar('id-ajena', propietarioId, { nombre: 'Hack' }),
+        service.update('id-ajena', userId, { nombre: 'Hack' }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -185,7 +234,7 @@ describe('EmbarcacionesService', () => {
       const zonaFindMany = vi.fn().mockResolvedValue([{ id: 'zona-2' }]);
       const service = createService(prismaConMocks({ findFirst, update, zonaFindMany }));
 
-      await service.actualizar('uuid-embarcacion', propietarioId, { zonaIds: ['zona-2'] });
+      await service.update('uuid-embarcacion', userId, { zonaIds: ['zona-2'] });
 
       expect(update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -196,20 +245,6 @@ describe('EmbarcacionesService', () => {
             },
           }),
         }),
-      );
-    });
-  });
-
-  describe('listarPorPropietario', () => {
-    it('lista embarcaciones del propietario con cobertura', async () => {
-      const findMany = vi.fn().mockResolvedValue([embarcacionBase]);
-      const service = createService(prismaConMocks({ findMany }));
-
-      const result = await service.listarPorPropietario(propietarioId);
-
-      expect(result).toEqual([embarcacionBase]);
-      expect(findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { propietarioId } }),
       );
     });
   });
