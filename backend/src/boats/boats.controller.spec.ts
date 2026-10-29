@@ -11,6 +11,10 @@ describe('BoatsController', () => {
     expect(rolesDe('listApproved')).toEqual([Role.ADMIN]);
   });
 
+  it('restringe la búsqueda de embarcaciones al rol ADMIN', () => {
+    expect(rolesDe('search')).toEqual([Role.ADMIN]);
+  });
+
   it('restringe las rutas del propietario al rol OWNER', () => {
     expect(rolesDe('listMine')).toEqual([Role.OWNER]);
     expect(rolesDe('create')).toEqual([Role.OWNER]);

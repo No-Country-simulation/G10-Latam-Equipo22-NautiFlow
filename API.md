@@ -72,6 +72,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | GET | `/admin/documents` | ADMIN | Listar documentos pendientes sin sus bytes |
 | PATCH | `/admin/documents/:id/review` | ADMIN | Aprobar o rechazar un documento |
 | GET | `/documents/:id/file` | Propietario o ADMIN | Descargar documento privado |
+| GET | `/boats` | ADMIN | Buscar embarcaciones elegibles con filtros y paginación |
 | GET | `/boats/admin/approved` | ADMIN | Listar embarcaciones elegibles para asignación |
 | GET | `/boats/mine` | OWNER | Embarcaciones propias con su cobertura |
 | GET | `/boats/:id` | OWNER | Detalle de una embarcación propia |
@@ -99,6 +100,44 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
   "timestamp": "2026-10-21T04:06:53.454Z"
 }
 ```
+
+### `GET /api/v1/boats` (ADMIN)
+
+Búsqueda paginada de embarcaciones elegibles: propietario aprobado y usuario activo.
+Por defecto solo devuelve embarcaciones en estado `VERIFICADA`.
+
+| Query | Tipo | Descripción |
+| --- | --- | --- |
+| `zonaId` | UUID | Zona que debe cubrir la embarcación |
+| `capacidadMin` | entero ≥ 1 | Capacidad mínima de pasajeros |
+| `estado` | `PENDIENTE`, `VERIFICADA`, `RECHAZADA`, `INACTIVA` | Default `VERIFICADA` |
+| `q` | texto | Busca en nombre y matrícula sin distinguir mayúsculas |
+| `page` / `limit` | entero | `page` desde 1; `limit` de 1 a 100 (default 20) |
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "nombre": "Lancha Delta 1",
+      "matricula": "ABC-123",
+      "capacidad": 8,
+      "estado": "VERIFICADA",
+      "descripcion": null,
+      "propietario": {
+        "phone": "+5491100000000",
+        "whatsappPhone": "+5491100000000",
+        "user": { "name": "Nombre del propietario" }
+      },
+      "zonas": [{ "zona": { "id": "uuid", "nombre": "Delta del Tigre" } }]
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+}
+```
+
+`GET /boats/admin/approved` se mantiene como listado simple (`id`, `nombre`, `matricula`,
+`capacidad`) para la asignación de viajes desde el panel admin.
 
 ### `GET /api/v1/public/boats`
 
