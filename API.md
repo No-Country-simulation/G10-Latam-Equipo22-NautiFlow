@@ -8,7 +8,7 @@ REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:30
 - Validación en backend con `class-validator`; el frontend valida como refuerzo.
 - Guards por rol (`ADMIN`, `OWNER`, `CLIENT`) y por recurso.
 - Códigos: `200/201`, `400`, `401`, `403`, `404`, `409`, `422`.
-- Paginación en listados administrativos: `?page=1&limit=20` (máx. 100).
+- Paginación en listados administrativos y públicos: `?page=1&limit=20` (máx. 100).
 - Respuestas de error con mensaje claro, sin trazas internas.
 - Documentos privados: no se devuelven URLs públicas permanentes.
 
@@ -85,6 +85,9 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/admin/trips/:id/review-link` | ADMIN | Generar enlace único de reseña |
 | GET | `/public/reviews/:token` | Público | Validar token y contexto |
 | POST | `/public/reviews/:token` | Público | Enviar calificación |
+| GET | `/public/boats` | Público | Catálogo de embarcaciones verificadas con su reputación |
+| GET | `/public/boats/:id` | Público | Detalle público con promedio y últimas reseñas |
+| GET | `/public/boats/:id/reviews` | Público | Reseñas públicas de una embarcación |
 
 ### `GET /api/v1/health`
 
@@ -135,6 +138,36 @@ Por defecto solo devuelve embarcaciones en estado `VERIFICADA`.
 
 `GET /boats/admin/approved` se mantiene como listado simple (`id`, `nombre`, `matricula`,
 `capacidad`) para la asignación de viajes desde el panel admin.
+
+### `GET /api/v1/public/boats`
+
+Catálogo público de embarcaciones elegibles (verificadas, con propietario aprobado y usuario
+activo) junto con su reputación agregada. Acepta `zonaId`, `page` y `limit`.
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "nombre": "Lancha Delta 1",
+      "capacidad": 8,
+      "descripcion": null,
+      "propietario": {
+        "whatsappPhone": "+5491100000000",
+        "user": { "name": "Nombre del propietario" }
+      },
+      "zonas": [{ "zona": { "id": "uuid", "nombre": "Delta del Tigre" } }],
+      "rating": { "average": 4.7, "total": 3 }
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+}
+```
+
+`average` es `null` cuando la embarcación no tiene reseñas y se redondea a un decimal.
+`GET /public/boats/:id` incluye las últimas cinco reseñas y `GET /public/boats/:id/reviews`
+pagina todas las reseñas. Solo se exponen embarcaciones elegibles; el resto responde `404`.
+No se exponen matrícula, teléfono ni email del propietario: solo el WhatsApp de contacto.
 
 ## Contrato planificado
 

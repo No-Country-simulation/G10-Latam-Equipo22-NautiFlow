@@ -2,8 +2,43 @@ import { Injectable } from '@nestjs/common';
 import { BadRequestException, GoneException, NotFoundException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
-import { TripStatus } from '../generated/prisma/client.js';
+import {
+	EstadoEmbarcacion,
+	OwnerStatus,
+	Prisma,
+	TripStatus,
+} from '../generated/prisma/client.js';
+import { buildPaginated } from '../common/dto/paginated-response.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PublicBoatsQueryDto } from './public-boats-query.dto.js';
+
+const EMBARCACION_ELEGIBLE: Prisma.EmbarcacionWhereInput = {
+	estado: EstadoEmbarcacion.VERIFICADA,
+	propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+};
+
+const CAMPOS_PUBLICOS = {
+	id: true,
+	nombre: true,
+	capacidad: true,
+	descripcion: true,
+	propietario: {
+		select: { whatsappPhone: true, user: { select: { name: true } } },
+	},
+	zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+} satisfies Prisma.EmbarcacionSelect;
+
+type Rating = { average: number | null; total: number };
+
+const SIN_RATING: Rating = { average: null, total: 0 };
+
+function construirRating(average: number | null, total: number): Rating {
+	return {
+		average: average === null ? null : Math.round(average * 10) / 10,
+		total,
+	};
+}
 
 @Injectable()
 export class ReviewsService {
@@ -75,6 +110,97 @@ export class ReviewsService {
 				select: { id: true, rating: true, createdAt: true },
 			});
 		});
+	}
+
+	async listPublicBoats(query: PublicBoatsQueryDto) {
+		const where: Prisma.EmbarcacionWhereInput = { ...EMBARCACION_ELEGIBLE };
+		if (query.zonaId) {
+			where.zonas = { some: { zonaId: query.zonaId } };
+		}
+
+		const [boats, total] = await Promise.all([
+			this.prisma.embarcacion.findMany({
+				where,
+				orderBy: { nombre: 'asc' },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: CAMPOS_PUBLICOS,
+			}),
+			this.prisma.embarcacion.count({ where }),
+		]);
+
+		const ratings = await this.ratingsByBoat(boats.map((boat) => boat.id));
+		return buildPaginated(
+			boats.map((boat) => ({ ...boat, rating: ratings.get(boat.id) ?? SIN_RATING })),
+			total,
+			query.page,
+			query.limit,
+		);
+	}
+
+	async getPublicBoat(id: string) {
+		const boat = await this.prisma.embarcacion.findFirst({
+			where: { id, ...EMBARCACION_ELEGIBLE },
+			select: {
+				...CAMPOS_PUBLICOS,
+				reviews: {
+					orderBy: { createdAt: 'desc' },
+					take: 5,
+					select: { rating: true, comment: true, createdAt: true },
+				},
+			},
+		});
+		if (!boat) throw new NotFoundException('No se encontró la embarcación.');
+
+		const summary = await this.prisma.review.aggregate({
+			where: { embarcacionId: id },
+			_avg: { rating: true },
+			_count: { _all: true },
+		});
+		return {
+			...boat,
+			rating: construirRating(summary._avg.rating, summary._count._all),
+		};
+	}
+
+	async listPublicBoatReviews(id: string, query: PaginationQueryDto) {
+		const boat = await this.prisma.embarcacion.findFirst({
+			where: { id, ...EMBARCACION_ELEGIBLE },
+			select: { id: true },
+		});
+		if (!boat) throw new NotFoundException('No se encontró la embarcación.');
+
+		const [reviews, total] = await Promise.all([
+			this.prisma.review.findMany({
+				where: { embarcacionId: id },
+				orderBy: { createdAt: 'desc' },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: { rating: true, comment: true, createdAt: true },
+			}),
+			this.prisma.review.count({ where: { embarcacionId: id } }),
+		]);
+		return buildPaginated(reviews, total, query.page, query.limit);
+	}
+
+	private async ratingsByBoat(ids: string[]) {
+		const ratings = new Map<string, Rating>();
+		if (!ids.length) return ratings;
+
+		const groups = await this.prisma.review.groupBy({
+			by: ['embarcacionId'],
+			where: { embarcacionId: { in: ids } },
+			_avg: { rating: true },
+			_count: { _all: true },
+		});
+		for (const group of groups) {
+			if (!group.embarcacionId) continue;
+			ratings.set(
+				group.embarcacionId,
+				construirRating(group._avg.rating, group._count._all),
+			);
+		}
+		return ratings;
 	}
 
 	private async findValidToken(token: string) {
