@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OwnerStatus, DocumentStatus, DocumentType, EstadoEmbarcacion } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -31,6 +31,35 @@ export class OwnersService {
 				},
 			},
 		});
+	}
+
+	async reopenMyRequest(userId: string) {
+		const owner = await this.prisma.owner.findUnique({
+			where: { userId },
+			select: { id: true, status: true },
+		});
+		if (!owner) throw new NotFoundException('No se encontró la solicitud.');
+		if (owner.status !== OwnerStatus.REJECTED) {
+			throw new ConflictException('Solo se puede reabrir una solicitud rechazada.');
+		}
+
+		await this.prisma.$transaction(async (transaction) => {
+			await transaction.owner.update({
+				where: { id: owner.id },
+				data: {
+					status: OwnerStatus.PENDING,
+					reviewNote: null,
+					reviewedAt: null,
+					reviewedById: null,
+				},
+			});
+			await transaction.embarcacion.updateMany({
+				where: { propietarioId: owner.id, estado: EstadoEmbarcacion.RECHAZADA },
+				data: { estado: EstadoEmbarcacion.PENDIENTE },
+			});
+		});
+
+		return this.getMyRequest(userId);
 	}
 
 	listRequests(status?: OwnerStatus) {

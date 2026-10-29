@@ -61,6 +61,8 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/auth/logout` | Público | Expirar la cookie de sesión |
 | GET | `/auth/me` | Autenticado | Usuario actual de la sesión |
 | GET | `/owners/me/solicitud` | OWNER | Perfil, embarcaciones y documentos propios |
+| POST | `/owners/me/documents` | OWNER | Reenviar documentación y volver la solicitud a pendiente |
+| POST | `/owners/me/solicitud/reabrir` | OWNER | Reabrir una solicitud rechazada |
 | GET | `/zones` | Público | Zonas de cobertura activas |
 | GET | `/zones/admin` | ADMIN | Todas las zonas, activas e inactivas |
 | POST | `/zones` | ADMIN | Crear zona de cobertura |
@@ -189,8 +191,22 @@ siendo válido hasta su vencimiento si fue copiado fuera del navegador.
 PATCH /api/v1/admin/documents/{documentId}/review
 Authorization: Bearer <jwt>
 
-{ "decision": "APPROVED", "comment": "Documentación legible y vigente" }
+{ "decision": "APPROVED", "note": "Documentación legible y vigente" }
 ```
+
+## Reenvío de documentación
+
+`POST /api/v1/owners/me/documents` recibe `multipart/form-data` con los mismos campos de archivo
+del registro (`license`, `insurance`, `backgroundCheck`, `photos`), todos opcionales pero con al
+menos uno presente. Para licencia, seguro y antecedentes reemplaza el último documento de ese tipo
+y lo deja en `PENDING`, limpiando la observación previa; las fotos reemplazan el conjunto actual.
+Solo se permite mientras la solicitud está `PENDING` o `REJECTED`; si ya está `APPROVED` responde
+`409`. Si la solicitud estaba `REJECTED`, la vuelve a `PENDING` y devuelve sus lanchas `RECHAZADA`
+a `PENDIENTE`.
+
+`POST /api/v1/owners/me/solicitud/reabrir` vuelve a `PENDING` una solicitud rechazada sin subir
+archivos (por ejemplo, cuando solo hay que corregir datos de la lancha). Responde `409` si la
+solicitud no está `REJECTED`.
 
 ## Contratos de registro y operación
 
