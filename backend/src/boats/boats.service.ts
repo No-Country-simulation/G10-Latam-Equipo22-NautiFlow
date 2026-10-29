@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
+import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateBoatDto } from './create-boat.dto.js';
+import { SearchBoatsQueryDto } from './search-boats-query.dto.js';
 import { UpdateBoatDto } from './update-boat.dto.js';
 
 @Injectable()
@@ -17,6 +19,54 @@ export class BoatsService {
 			orderBy: { nombre: 'asc' },
 			select: { id: true, nombre: true, matricula: true, capacidad: true },
 		});
+	}
+
+	async search(query: SearchBoatsQueryDto) {
+		const q = query.q?.trim();
+		const where: Prisma.EmbarcacionWhereInput = {
+			estado: query.estado ?? EstadoEmbarcacion.VERIFICADA,
+			propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+		};
+		if (query.zonaId) {
+			where.zonas = { some: { zonaId: query.zonaId } };
+		}
+		if (query.capacidadMin) {
+			where.capacidad = { gte: query.capacidadMin };
+		}
+		if (q) {
+			where.OR = [
+				{ nombre: { contains: q, mode: 'insensitive' } },
+				{ matricula: { contains: q, mode: 'insensitive' } },
+			];
+		}
+
+		const [data, total] = await Promise.all([
+			this.prisma.embarcacion.findMany({
+				where,
+				orderBy: { nombre: 'asc' },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: {
+					id: true,
+					nombre: true,
+					matricula: true,
+					capacidad: true,
+					estado: true,
+					descripcion: true,
+					propietario: {
+						select: {
+							phone: true,
+							whatsappPhone: true,
+							user: { select: { name: true } },
+						},
+					},
+					zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+				},
+			}),
+			this.prisma.embarcacion.count({ where }),
+		]);
+
+		return buildPaginated(data, total, query.page, query.limit);
 	}
 
 	async listMine(userId: string) {

@@ -34,6 +34,7 @@ function prismaConMocks({
   ownerFindUnique,
   findMany,
   findFirst,
+  count,
   create,
   update,
   zonaFindMany,
@@ -41,6 +42,7 @@ function prismaConMocks({
   ownerFindUnique?: ReturnType<typeof vi.fn>;
   findMany?: ReturnType<typeof vi.fn>;
   findFirst?: ReturnType<typeof vi.fn>;
+  count?: ReturnType<typeof vi.fn>;
   create?: ReturnType<typeof vi.fn>;
   update?: ReturnType<typeof vi.fn>;
   zonaFindMany?: ReturnType<typeof vi.fn>;
@@ -52,6 +54,7 @@ function prismaConMocks({
     embarcacion: {
       findMany: findMany ?? vi.fn(),
       findFirst: findFirst ?? vi.fn(),
+      count: count ?? vi.fn(),
       create: create ?? vi.fn(),
       update: update ?? vi.fn(),
     },
@@ -80,6 +83,91 @@ describe('BoatsService', () => {
           },
         }),
       );
+    });
+  });
+
+  describe('search', () => {
+    it('pagina y filtra solo embarcaciones elegibles por defecto', async () => {
+      const findMany = vi.fn().mockResolvedValue([embarcacionBase]);
+      const count = vi.fn().mockResolvedValue(1);
+      const service = createService(prismaConMocks({ findMany, count }));
+
+      const result = await service.search({ page: 1, limit: 20 });
+
+      expect(result.data).toEqual([embarcacionBase]);
+      expect(result.meta).toEqual({ page: 1, limit: 20, total: 1, totalPages: 1 });
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            estado: EstadoEmbarcacion.VERIFICADA,
+            propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+          },
+          orderBy: { nombre: 'asc' },
+          skip: 0,
+          take: 20,
+        }),
+      );
+    });
+
+    it('combina filtros de zona, capacidad y texto', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(0);
+      const service = createService(prismaConMocks({ findMany, count }));
+
+      await service.search({
+        page: 2,
+        limit: 5,
+        zonaId: 'uuid-zona',
+        capacidadMin: 6,
+        q: '  delta  ',
+      });
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            estado: EstadoEmbarcacion.VERIFICADA,
+            propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+            zonas: { some: { zonaId: 'uuid-zona' } },
+            capacidad: { gte: 6 },
+            OR: [
+              { nombre: { contains: 'delta', mode: 'insensitive' } },
+              { matricula: { contains: 'delta', mode: 'insensitive' } },
+            ],
+          },
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
+    it('respeta el estado indicado y calcula el total de páginas', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(11);
+      const service = createService(prismaConMocks({ findMany, count }));
+
+      const result = await service.search({
+        page: 3,
+        limit: 5,
+        estado: EstadoEmbarcacion.INACTIVA,
+      });
+
+      expect(result.meta).toEqual({ page: 3, limit: 5, total: 11, totalPages: 3 });
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ estado: EstadoEmbarcacion.INACTIVA }),
+        }),
+      );
+    });
+
+    it('ignora un texto de búsqueda vacío', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(0);
+      const service = createService(prismaConMocks({ findMany, count }));
+
+      await service.search({ page: 1, limit: 20, q: '   ' });
+
+      const where = findMany.mock.calls[0][0].where;
+      expect(where).not.toHaveProperty('OR');
     });
   });
 

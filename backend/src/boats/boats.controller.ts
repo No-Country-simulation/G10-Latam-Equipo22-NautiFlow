@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	Param,
+	ParseUUIDPipe,
+	Patch,
+	Post,
+	Query,
+	Req,
+	UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -6,6 +17,7 @@ import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
 import { CreateBoatDto } from './create-boat.dto.js';
+import { SearchBoatsQueryDto } from './search-boats-query.dto.js';
 import { UpdateBoatDto } from './update-boat.dto.js';
 import { BoatsService } from './boats.service.js';
 
@@ -20,6 +32,13 @@ export class BoatsController {
 	@Roles(Role.ADMIN)
 	listApproved() {
 		return this.boatsService.listApproved();
+	}
+
+	@Get()
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.ADMIN)
+	search(@Query() query: SearchBoatsQueryDto) {
+		return this.boatsService.search(query);
 	}
 
 	@Get('mine')
