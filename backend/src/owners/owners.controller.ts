@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -17,5 +17,13 @@ export class OwnersController {
 	@Roles(Role.OWNER)
 	getMyRequest(@Req() request: AuthenticatedRequest) {
 		return this.ownersService.getMyRequest(request.user!.id);
+	}
+
+	@Post('me/solicitud/reabrir')
+	@HttpCode(HttpStatus.OK)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.OWNER)
+	reopenMyRequest(@Req() request: AuthenticatedRequest) {
+		return this.ownersService.reopenMyRequest(request.user!.id);
 	}
 }
