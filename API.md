@@ -238,3 +238,15 @@ guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los c
 - `ADMIN` accede a revisión, documentos y viajes; `OWNER` a su estado, sus documentos y sus embarcaciones.
 - `CLIENT` solo puede acceder a su dashboard y a enlaces públicos de reseña; no hay reservas públicas.
 - El turista no tiene cuenta: entra por un enlace con token de reseña de uso único.
+
+## Límites y cabeceras
+
+- `POST /auth/login`, `POST /auth/register/lanchero` (y su alias `register`) y
+  `POST /auth/register/cliente` aceptan hasta `AUTH_RATE_LIMIT_MAX` intentos por IP cada
+  `AUTH_RATE_LIMIT_WINDOW_SECONDS` segundos (10 por minuto por defecto). Al superarlo responden
+  `429` con `codigo: "DEMASIADAS_PETICIONES"`. El contador es en memoria: con más de una instancia
+  del backend hay que moverlo a un almacén compartido.
+- Helmet agrega cabeceras de seguridad (`X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Strict-Transport-Security`, entre otras) y oculta `X-Powered-By`. La CSP se
+  desactiva porque la API solo devuelve JSON y la UI de Swagger la necesita permisiva.
+- CORS solo acepta los orígenes listados en `CORS_ORIGIN` y viaja con credenciales.
