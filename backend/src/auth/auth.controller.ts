@@ -14,6 +14,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard.js';
 import type { OwnerRegistrationFiles } from '../documents/file.types.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -29,6 +30,7 @@ export class AuthController {
 
 	@Post(['register/lanchero', 'register'])
 	@HttpCode(HttpStatus.ACCEPTED)
+	@UseGuards(RateLimitGuard)
 	@UseInterceptors(
 		FileFieldsInterceptor(
 			[
@@ -52,6 +54,7 @@ export class AuthController {
 
 	@Post('register/cliente')
 	@HttpCode(HttpStatus.ACCEPTED)
+	@UseGuards(RateLimitGuard)
 	async registerClient(@Body() dto: RegisterClientDto, @Res({ passthrough: true }) response: Response) {
 		await this.authService.registerClient(dto);
 		response.setHeader('Cache-Control', 'no-store');
@@ -60,6 +63,7 @@ export class AuthController {
 
 	@Post('login')
 	@HttpCode(HttpStatus.OK)
+	@UseGuards(RateLimitGuard)
 	async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
 		const session = await this.authService.login(dto);
 		this.setSessionCookie(response, session.token, session.maxAge);

@@ -1,5 +1,15 @@
 import { plainToInstance } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 
 export class EnvVars {
   @IsInt()
@@ -22,6 +32,18 @@ export class EnvVars {
 
   @IsIn(['development', 'test', 'production'])
   NODE_ENV: string = 'development';
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  AUTH_RATE_LIMIT_MAX: number = 10;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  AUTH_RATE_LIMIT_WINDOW_SECONDS: number = 60;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVars {
