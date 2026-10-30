@@ -8,8 +8,6 @@ import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
 import { OwnerRegistrationPage } from './pages/OwnerRegistrationPage';
-import { ClientRegistrationPage } from './pages/ClientRegistrationPage';
-import { ClientRegistrationConfirmationPage } from './pages/ClientRegistrationConfirmationPage';
 import { RegistrationConfirmationPage } from './pages/RegistrationConfirmationPage';
 import { OwnerRequestPage } from './pages/OwnerRequestPage';
 import { AdminRequestsPage } from './pages/AdminRequestsPage';
@@ -19,9 +17,7 @@ import { PublicReviewPage } from './pages/PublicReviewPage';
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/registro/lanchero', element: <OwnerRegistrationPage /> },
-  { path: '/registro/cliente', element: <ClientRegistrationPage /> },
   { path: '/registro/confirmacion', element: <RegistrationConfirmationPage /> },
-  { path: '/registro/cliente/confirmacion', element: <ClientRegistrationConfirmationPage /> },
   { path: '/reviews/:token', element: <PublicReviewPage /> },
   {
     path: '/',
@@ -66,14 +62,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute role="ADMIN">
             <RoleDashboardPage role="ADMIN" />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'client/dashboard',
-        element: (
-          <ProtectedRoute role="CLIENT">
-            <RoleDashboardPage role="CLIENT" />
           </ProtectedRoute>
         ),
       },

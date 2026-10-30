@@ -59,7 +59,6 @@ export function LoginPage() {
           {submitting ? 'Ingresando...' : 'Ingresar'} <span aria-hidden="true">›</span>
         </button>
         <p className="auth-links">¿Querés sumar tu embarcación? <Link to="/registro/lanchero">Registrate como lanchero</Link></p>
-        <p className="auth-links">¿Vas a viajar? <Link to="/registro/cliente">Crear cuenta de cliente</Link></p>
       </form>
     </AuthFrame>
   );
