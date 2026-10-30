@@ -243,8 +243,10 @@ alta, ambos pueden utilizar `POST /auth/login`; el admin inicial se crea solo co
 Las decisiones admin reciben `{ "decision": "APPROVED" | "REJECTED", "note": "..." }`. Aprobar
 un perfil requiere que licencia, seguro y antecedentes estén aprobados. Las operaciones de viaje
 crean o reutilizan cliente por email opcional; solo asignan lanchas y lancheros aprobados con
-capacidad suficiente. No hay endpoint ni formulario público de alta ADMIN: el primer administrador
-se crea con el seed.
+capacidad suficiente. Una lancha no puede quedar en dos viajes activos dentro de la misma franja:
+se rechaza con `409` si hay otro viaje `PENDING`/`ASSIGNED`/`CONFIRMED` a menos de `TRIP_SLOT_HOURS`
+horas (2 por defecto), tanto al crear el viaje con embarcación como al asignarla después. No hay
+endpoint ni formulario público de alta ADMIN: el primer administrador se crea con el seed.
 
 Los enlaces de reseña contienen 32 bytes aleatorios codificados en base64url. En la base solo se
 guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los consume atómicamente.
