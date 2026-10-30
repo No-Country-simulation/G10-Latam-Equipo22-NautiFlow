@@ -16,7 +16,7 @@ versionan en `backend/prisma/migrations`.
 | name | string | obligatorio |
 | email | string | único |
 | passwordHash | string | hash, nunca texto plano |
-| role | `Role` | `ADMIN` \| `OWNER` \| `CLIENT` (default `OWNER`; el cliente y admin los asigna el backend) |
+| role | `Role` | `ADMIN` \| `OWNER` (default `OWNER`; `ADMIN` lo asigna el seed). `CLIENT` queda como valor legado sin altas nuevas |
 | status | `UserStatus` | `ACTIVE` \| `INACTIVE` (default `ACTIVE`) |
 | createdAt / updatedAt | timestamp | automáticos |
 
@@ -33,10 +33,10 @@ versionan en `backend/prisma/migrations`.
 
 ### Cliente
 
-Un cliente operativo puede no tener cuenta. Cuando crea una cuenta, `userId` enlaza el registro a
-un `User` con rol `CLIENT`; el cliente no puede escoger su rol. Las reseñas usan enlaces únicos y
-no requieren cuenta.
-| createdAt / updatedAt | timestamp | automáticos |
+Registro de contacto de la agencia: nombre, teléfono y email opcional único. No tiene cuenta ni
+credenciales; el administrador lo crea o reutiliza al registrar viajes. `userId` se conserva como
+vínculo legado con cuentas `CLIENT` anteriores, que ya no pueden iniciar sesión. Las reseñas usan
+enlaces únicos y no requieren cuenta.
 
 ### EstadoEmbarcacion
 
