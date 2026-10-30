@@ -84,6 +84,8 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | GET | `/admin/trips` | ADMIN | Listar viajes y clientes |
 | PATCH | `/admin/trips/:id/assign` | ADMIN | Asignar embarcación |
 | PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
+| POST | `/admin/empty-legs` | ADMIN | Registrar tramo vacío de regreso |
+| GET | `/admin/empty-legs` | ADMIN | Listar tramos vacíos con filtros y paginación |
 | POST | `/admin/trips/:id/review-link` | ADMIN | Generar enlace único de reseña |
 | GET | `/public/reviews/:token` | Público | Validar token y contexto |
 | POST | `/public/reviews/:token` | Público | Enviar calificación |
@@ -171,12 +173,28 @@ activo) junto con su reputación agregada. Acepta `zonaId`, `page` y `limit`.
 pagina todas las reseñas. Solo se exponen embarcaciones elegibles; el resto responde `404`.
 No se exponen matrícula, teléfono ni email del propietario: solo el WhatsApp de contacto.
 
+### `POST /api/v1/admin/empty-legs` (ADMIN)
+
+```json
+{ "tripId": "uuid", "scheduledAt": "2026-11-01T18:00:00.000Z" }
+```
+
+Registra el regreso en vacío de un viaje de ida. La embarcación, el origen y el destino se
+derivan del viaje: el tramo sale del destino y vuelve al origen con la misma lancha. Solo se
+aceptan viajes `ASSIGNED` o `CONFIRMED` con embarcación asignada, y `scheduledAt` debe ser
+posterior a la salida del viaje. Un viaje admite un solo tramo activo (todo lo que no esté
+`CLOSED`); repetirlo responde `409`.
+
+### `GET /api/v1/admin/empty-legs` (ADMIN)
+
+Lista paginada ordenada por hora de regreso. `status` filtra por estado (por defecto
+`AVAILABLE`); `page` y `limit` siguen la convención general. Cada fila incluye la lancha, el
+lanchero y los datos del viaje de origen.
+
 ## Contrato planificado
 
 | Módulo | Método y ruta | Rol | Uso |
 | --- | --- | --- | --- |
-| Empty legs | `POST /admin/empty-legs` | Admin | Registrar tramo vacío |
-| Empty legs | `GET /admin/empty-legs` | Admin | Listar tramos disponibles |
 | Notifications | `GET /notifications` | Autenticado | Consultar notificaciones |
 
 El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, `SameSite=Lax`, con

@@ -78,7 +78,7 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional |
 | ReviewToken | trip único, hash SHA-256, expiración, uso y creación |
 | Review | trip único, embarcación opcional, rating (1–5), comentario |
-| EmptyLeg | `tripId` de origen, `embarcacionId`, zona/origen/destino, fecha/hora estimada, estado |
+| EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
 ## Relaciones previstas
@@ -109,6 +109,8 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Todo documento registra revisor, fecha y decisión.
 - `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
+- El tramo vacío invierte el recorrido del viaje y reutiliza su embarcación; solo se registra
+  para viajes `ASSIGNED`/`CONFIRMED`, con regreso posterior a la salida y un tramo activo por viaje.
 
 ## Trabajo con migraciones
 
