@@ -49,6 +49,14 @@ enum TripStatus {
   CANCELLED
 }
 
+/// Estado del tramo vacío en la bolsa interna de retornos.
+enum EmptyLegStatus {
+  AVAILABLE
+  OFFERED
+  ASSIGNED
+  CLOSED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String
@@ -126,6 +134,7 @@ model Embarcacion {
   documents OwnerDocument[]
   viajes Trip[]
   reviews Review[]
+  emptyLegs EmptyLeg[]
 
   @@map("embarcaciones")
 }
@@ -197,9 +206,29 @@ model Trip {
   updatedAt      DateTime   @updatedAt
   reviewToken    ReviewToken?
   review         Review?
+  emptyLegs      EmptyLeg[]
 
   @@index([status, scheduledAt])
   @@map("trips")
+}
+
+/// Tramo de regreso sin pasajeros que nace de un viaje de ida.
+model EmptyLeg {
+  id            String         @id @default(uuid()) @db.Uuid
+  tripId        String         @db.Uuid
+  trip          Trip           @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  embarcacionId String         @db.Uuid
+  embarcacion   Embarcacion    @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
+  origin        String
+  destination   String
+  scheduledAt   DateTime
+  status        EmptyLegStatus @default(AVAILABLE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([tripId])
+  @@map("empty_legs")
 }
 
 model ReviewToken {
