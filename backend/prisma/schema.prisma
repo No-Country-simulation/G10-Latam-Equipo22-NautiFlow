@@ -209,6 +209,7 @@ model Trip {
   emptyLegs      EmptyLeg[]
 
   @@index([status, scheduledAt])
+  @@index([embarcacionId, scheduledAt])
   @@map("trips")
 }
 

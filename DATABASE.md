@@ -106,6 +106,8 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - El token es aleatorio y se guarda como hash, nunca en claro.
 - Una embarcación con documentos rechazados no aparece como elegible.
 - La asignación de viaje es una acción explícita del administrador.
+- Una embarcación no puede tener dos viajes activos dentro de `TRIP_SLOT_HOURS` horas (2 por
+  defecto); los viajes `CANCELLED` y `COMPLETED` no bloquean la franja.
 - Todo documento registra revisor, fecha y decisión.
 - `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
