@@ -81,6 +81,42 @@ marcadas como **pendientes** requieren acuerdo del equipo.
 - **Motivo:** agilizar la puesta en marcha sin perder la convención a futuro.
 - **Estado:** transitoria.
 
+## D-010 · Nomenclatura: dominio en español, vocabulario técnico en inglés
+
+- **Fecha:** 2026-10-23
+- **Decisión:** modelos, campos, enums, DTOs, rutas y JSON nuevos del dominio se escriben en
+  español sin tildes ni ñ (`Zona`, `Embarcacion`, `EstadoEmbarcacion`, `propietarioId`). Se
+  mantienen en inglés los conceptos técnicos (`id`, `createdAt`, `updatedAt`, `email`,
+  `passwordHash`, JWT, HTTP, variables de entorno). Las tablas nuevas usan `snake_case` plural
+  vía `@@map` (`zonas`, `embarcaciones`, `embarcaciones_zonas`). Los commits siguen Conventional
+  Commits (tipo y alcance en inglés) con asunto en español.
+- **Alternativas:** todo el código en inglés (estado previo); todo en español incluyendo
+  `creadoEn` y `contrasenaHash`.
+- **Motivo:** coherencia con la interfaz en español, la documentación y las historias del equipo.
+- **Consecuencia:** convivencia temporal con `User`, `Owner` y `Role`; la unificación queda
+  pendiente (TECH-14) hasta mergear US-01, sin tocar el trabajo de auth.
+- **Responsable:** equipo Full Stack.
+- **Estado:** aprobada.
+
+## D-011 — Turista sin cuenta y retiro del rol CLIENT
+
+- **Fecha:** 2026-10-30
+- **Decisión:** los únicos roles autenticados son `ADMIN` y `OWNER`. El turista no crea cuenta:
+  consulta la landing pública y deja reseñas mediante un enlace único asociado a un viaje
+  completado. `Cliente` es un registro de contacto de la agencia (nombre, teléfono, email) sin
+  credenciales.
+- **Contexto:** el commit `722b4c7` agregó `Role.CLIENT`, `POST /auth/register/cliente`, el vínculo
+  `Cliente.userId` y el dashboard `/client/dashboard`, contradiciendo el plan técnico.
+- **Alternativas:** mantener `CLIENT` como cuenta de solo consulta; dejarlo como legado oculto;
+  retirarlo por completo.
+- **Motivo:** el plan técnico define roles admin/owner y turista sin cuenta; además el alta de
+  cliente no enlazaba un `Cliente` existente y podía fallar silenciosamente ante un email repetido.
+- **Consecuencia:** se elimina el alta, el login y las vistas de cliente. `Role.CLIENT` y
+  `Cliente.userId` se conservan por compatibilidad; las cuentas existentes quedan sin acceso y no
+  se borran datos. La limpieza definitiva del enum y del vínculo queda para TECH-14.
+- **Responsable:** equipo Full Stack.
+- **Estado:** aprobada.
+
 ## Decisiones pendientes
 
 | Tema | Propuesta inicial | Pregunta |
@@ -91,7 +127,7 @@ marcadas como **pendientes** requieren acuerdo del equipo.
 | WhatsApp | `wa.me` con texto prearmado | ¿Hace falta automatización real para la simulación? |
 | Almacenamiento | Storage privado externo | ¿Qué proveedor ofrece demo con persistencia y costo aceptable? |
 | Hosting | Render primero | ¿Servicio siempre activo o demo temporal? |
-| Autenticación | JWT; roles admin y owner; turista sin cuenta | ¿Registro abierto o invitación? |
+| Autenticación | Resuelta en D-011: roles admin y owner; turista sin cuenta | — |
 | Reseñas | Token por viaje completado, uso único | ¿Vencimiento? ¿Se permite editar? |
 | Frontend CSS | CSS con variables (actual) | ¿Tailwind, CSS Modules u otra opción? |
 | Planificación | Sprints según capacidad real | ¿Duración total de la simulación y fecha de demo? |
