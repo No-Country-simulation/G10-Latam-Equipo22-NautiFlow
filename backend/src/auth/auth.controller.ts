@@ -20,7 +20,6 @@ import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { LoginDto } from './login.dto.js';
 import { RegisterOwnerDto } from './register-owner.dto.js';
-import { RegisterClientDto } from './register-client.dto.js';
 import type { AuthenticatedRequest } from './types.js';
 
 @ApiTags('auth')
@@ -50,15 +49,6 @@ export class AuthController {
 		await this.authService.registerOwner(dto, files ?? {});
 		response.setHeader('Cache-Control', 'no-store');
 		return { message: 'Solicitud recibida. Si los datos permiten procesarla, quedará pendiente de revisión.' };
-	}
-
-	@Post('register/cliente')
-	@HttpCode(HttpStatus.ACCEPTED)
-	@UseGuards(RateLimitGuard)
-	async registerClient(@Body() dto: RegisterClientDto, @Res({ passthrough: true }) response: Response) {
-		await this.authService.registerClient(dto);
-		response.setHeader('Cache-Control', 'no-store');
-		return { message: 'Solicitud recibida. Si los datos permiten procesarla, podrás iniciar sesión.' };
 	}
 
 	@Post('login')

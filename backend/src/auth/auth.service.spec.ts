@@ -14,6 +14,15 @@ const activeOwner = {
   owner: { status: 'PENDING' },
 };
 
+const activeClient = {
+  id: 'client-id',
+  name: 'María González',
+  email: 'cliente@example.com',
+  role: Role.CLIENT,
+  status: 'ACTIVE',
+  owner: null,
+};
+
 function createService() {
   const findUnique = vi.fn();
   const createUser = vi.fn();
@@ -126,5 +135,29 @@ describe('AuthService', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('rechaza el inicio de sesión de cuentas de cliente', async () => {
+    const { service, findUnique } = createService();
+    findUnique.mockResolvedValue({
+      ...activeClient,
+      passwordHash: await bcrypt.hash('correct-horse-battery', 4),
+    } as never);
+
+    await expect(
+      service.login({ email: activeClient.email, password: 'correct-horse-battery' }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('invalida los tokens de cuentas de cliente existentes', async () => {
+    const { service, findUnique } = createService();
+    findUnique.mockResolvedValue({
+      ...activeOwner,
+      passwordHash: await bcrypt.hash('correct-horse-battery', 4),
+    } as never);
+    const session = await service.login({ email: activeOwner.email, password: 'correct-horse-battery' });
+
+    findUnique.mockResolvedValue(activeClient as never);
+    await expect(service.authenticateToken(session.token)).resolves.toBeNull();
   });
 });

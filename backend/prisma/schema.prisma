@@ -174,7 +174,7 @@ model OwnerDocument {
   @@map("owner_documents")
 }
 
-/// Cliente de la agencia; no tiene cuenta ni mecanismo de autenticación.
+/// Cliente de la agencia; registro de contacto sin cuenta. userId se conserva como vínculo legado.
 model Cliente {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String?  @unique @db.Uuid
