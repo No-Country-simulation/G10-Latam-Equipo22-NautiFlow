@@ -6,7 +6,7 @@ REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:30
 
 - DTOs de entrada y salida: nunca se exponen entidades Prisma.
 - Validación en backend con `class-validator`; el frontend valida como refuerzo.
-- Guards por rol (`ADMIN`, `OWNER`, `CLIENT`) y por recurso.
+- Guards por rol (`ADMIN`, `OWNER`) y por recurso.
 - Códigos: `200/201`, `400`, `401`, `403`, `404`, `409`, `422`.
 - Paginación en listados administrativos y públicos: `?page=1&limit=20` (máx. 100).
 - Respuestas de error con mensaje claro, sin trazas internas.
@@ -56,7 +56,6 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | GET | `/health` | Público | Estado de la API y conexión a PostgreSQL. `200` si la base responde, `503` si está caída |
 | POST | `/auth/register/lanchero` | Público | Registro multipart de lanchero, primera lancha y documentos |
 | POST | `/auth/register` | Público | Alias multipart legado de registro de lanchero |
-| POST | `/auth/register/cliente` | Público | Alta de cuenta CLIENT asociada a Cliente |
 | POST | `/auth/login` | Público | Login y emisión de JWT en cookie HttpOnly |
 | POST | `/auth/logout` | Público | Expirar la cookie de sesión |
 | GET | `/auth/me` | Autenticado | Usuario actual de la sesión |
@@ -234,11 +233,10 @@ solicitud no está `REJECTED`.
 `photos` (opcional, máximo cinco). Se aceptan PDF/JPEG/PNG/WebP de hasta 5 MB por archivo. El
 backend asigna `OWNER`, perfil/documentos/lancha en estado pendiente y crea todo en una transacción.
 
-`POST /api/v1/auth/register/cliente` recibe JSON con `firstName`, `lastName`, `email`, `phone` y
-`password`. El servidor asigna exclusivamente el rol `CLIENT`, hashea la contraseña y enlaza la
-cuenta con el modelo `Cliente` existente. El alta de ambos tipos responde `202` con un mensaje
+No existe alta de cuentas de cliente. El registro de lanchero responde `202` con un mensaje
 genérico y no inicia sesión automáticamente para evitar enumerar correos duplicados. Después del
-alta, ambos pueden utilizar `POST /auth/login`; el admin inicial se crea solo con el seed.
+alta, el lanchero puede utilizar `POST /auth/login`; el admin inicial se crea solo con el seed y
+las cuentas `CLIENT` legadas ya no pueden iniciar sesión.
 
 Las decisiones admin reciben `{ "decision": "APPROVED" | "REJECTED", "note": "..." }`. Aprobar
 un perfil requiere que licencia, seguro y antecedentes estén aprobados. Las operaciones de viaje
@@ -256,14 +254,14 @@ guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los c
 
 - JWT en cookie HttpOnly (también se acepta `Authorization: Bearer <token>` para clientes API).
 - `ADMIN` accede a revisión, documentos y viajes; `OWNER` a su estado, sus documentos y sus embarcaciones.
-- `CLIENT` solo puede acceder a su dashboard y a enlaces públicos de reseña; no hay reservas públicas.
-- El turista no tiene cuenta: entra por un enlace con token de reseña de uso único.
+- No existen cuentas de cliente ni dashboard de turista. El turista entra por un enlace con token
+  de reseña de uso único.
 
 ## Límites y cabeceras
 
-- `POST /auth/login`, `POST /auth/register/lanchero` (y su alias `register`) y
-  `POST /auth/register/cliente` aceptan hasta `AUTH_RATE_LIMIT_MAX` intentos por IP cada
-  `AUTH_RATE_LIMIT_WINDOW_SECONDS` segundos (10 por minuto por defecto). Al superarlo responden
+- `POST /auth/login` y `POST /auth/register/lanchero` (y su alias `register`) aceptan hasta
+  `AUTH_RATE_LIMIT_MAX` intentos por IP cada `AUTH_RATE_LIMIT_WINDOW_SECONDS` segundos (10 por
+  minuto por defecto). Al superarlo responden
   `429` con `codigo: "DEMASIADAS_PETICIONES"`. El contador es en memoria: con más de una instancia
   del backend hay que moverlo a un almacén compartido.
 - Helmet agrega cabeceras de seguridad (`X-Content-Type-Options`, `X-Frame-Options`,

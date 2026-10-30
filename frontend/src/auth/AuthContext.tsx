@@ -5,6 +5,10 @@ import { AuthContext } from './auth-context';
 
 let sessionRequest: Promise<{ user: AuthUser }> | null = null;
 
+function isSupportedUser(user: AuthUser) {
+  return user.role === 'ADMIN' || user.role === 'OWNER';
+}
+
 function getCurrentSession() {
   if (!sessionRequest) {
     sessionRequest = api
@@ -29,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getCurrentSession()
       .then(({ user: currentUser }) => {
-        if (active) setUser(currentUser);
+        if (active) setUser(isSupportedUser(currentUser) ? currentUser : null);
       })
       .catch(() => {
         if (active) setUser(null);
@@ -59,12 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.postForm<{ message: string }>('/auth/register/lanchero', formData);
   }
 
-  async function registerClient(details: { firstName: string; lastName: string; email: string; phone: string; password: string }) {
-    await api.post<{ message: string }>('/auth/register/cliente', details);
-  }
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, registerOwner, registerClient, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, registerOwner, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,9 +13,6 @@ export function LandingPage() {
         <Link to="/registro/lanchero" className="button">
           Incorporarme como lanchero
         </Link>
-        <Link to="/registro/cliente" className="button button-ghost">
-          Crear cuenta de cliente
-        </Link>
         <Link to="/estado" className="button button-ghost">
           Ver estado del sistema
         </Link>

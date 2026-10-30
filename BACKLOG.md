@@ -16,6 +16,8 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | TECH-05 | Seed y fixtures de desarrollo | Media | infra, backend |
 | TECH-06 | Ramas protegidas y reglas de PR | Media | infra |
 | TECH-07 | Seguridad API: helmet, rate limit, CORS estricto | Media | backend |
+| TECH-17 | Seed de admin idempotente: actualizar credenciales si el usuario existe | Baja | infra, backend |
+| TECH-18 | Agilizar el watch del backend en Docker sobre Windows | Media | infra |
 | DEC-01 | Resolver decisiones pendientes del plan técnico | Alta | infra |
 | DOC-01 | Acta de decisiones en `DECISIONS.md` | Media | infra |
 | US-01 | Registro e inicio de sesión del lanchero | Alta | historia-US-01, fullstack |
@@ -31,6 +33,7 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | US-04 | Cargar documentación con formato/tamaño validados | Alta | historia-US-04, backend |
 | US-05 | Revisar documentación con revisor, fecha y observación | Alta | historia-US-05, backend |
 | US-14 | CRUD de zonas de cobertura (M:N con Boat) | Alta | historia-US-14, backend |
+| TECH-13 | Modelo de datos de flota (Zona, Embarcación, M:N) | Alta | infra, backend |
 | TECH-08 | Elección de storage privado + POC de subida | Media | infra, backend |
 
 ## Etapa 3 — Operación admin
@@ -41,6 +44,8 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | US-07 | Registrar y asignar viaje manualmente | Alta | historia-US-07, backend |
 | US-08 | Completar viaje y habilitar reseña | Alta | historia-US-08, backend |
 | US-15 | Dashboard admin: layout, tablas y navegación | Alta | historia-US-15, frontend |
+| TECH-19 | Validar solapamiento de horarios al asignar lancha | Alta | backend |
+| TECH-20 | Paginar listados admin de viajes, solicitudes y documentos | Media | backend, frontend |
 
 ## Etapa 4 — Reputación y retornos
 
@@ -63,6 +68,7 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | QA-05 | Pruebas de archivos: formato, tamaño y privacidad | Media | qa |
 | QA-06 | Pruebas del token de reseña: uso único y expiración | Alta | qa |
 | TECH-09 | Deploy en Render (backend + PostgreSQL) con backups | Media | infra |
+| TECH-14 | Unificar nomenclatura español en User/Owner/Role | Baja | infra, backend |
 
 ## Sprint 1 — Criterios de aceptación
 
