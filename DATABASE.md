@@ -16,7 +16,7 @@ versionan en `backend/prisma/migrations`.
 | name | string | obligatorio |
 | email | string | único |
 | passwordHash | string | hash, nunca texto plano |
-| role | `Role` | `ADMIN` \| `OWNER` \| `CLIENT` (default `OWNER`; el cliente y admin los asigna el backend) |
+| role | `Role` | `ADMIN` \| `OWNER` (default `OWNER`; `ADMIN` lo asigna el seed). `CLIENT` queda como valor legado sin altas nuevas |
 | status | `UserStatus` | `ACTIVE` \| `INACTIVE` (default `ACTIVE`) |
 | createdAt / updatedAt | timestamp | automáticos |
 
@@ -33,10 +33,10 @@ versionan en `backend/prisma/migrations`.
 
 ### Cliente
 
-Un cliente operativo puede no tener cuenta. Cuando crea una cuenta, `userId` enlaza el registro a
-un `User` con rol `CLIENT`; el cliente no puede escoger su rol. Las reseñas usan enlaces únicos y
-no requieren cuenta.
-| createdAt / updatedAt | timestamp | automáticos |
+Registro de contacto de la agencia: nombre, teléfono y email opcional único. No tiene cuenta ni
+credenciales; el administrador lo crea o reutiliza al registrar viajes. `userId` se conserva como
+vínculo legado con cuentas `CLIENT` anteriores, que ya no pueden iniciar sesión. Las reseñas usan
+enlaces únicos y no requieren cuenta.
 
 ### EstadoEmbarcacion
 
@@ -78,7 +78,7 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional |
 | ReviewToken | trip único, hash SHA-256, expiración, uso y creación |
 | Review | trip único, embarcación opcional, rating (1–5), comentario |
-| EmptyLeg | `tripId` de origen, `embarcacionId`, zona/origen/destino, fecha/hora estimada, estado |
+| EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
 ## Relaciones previstas
@@ -106,9 +106,13 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - El token es aleatorio y se guarda como hash, nunca en claro.
 - Una embarcación con documentos rechazados no aparece como elegible.
 - La asignación de viaje es una acción explícita del administrador.
+- Una embarcación no puede tener dos viajes activos dentro de `TRIP_SLOT_HOURS` horas (2 por
+  defecto); los viajes `CANCELLED` y `COMPLETED` no bloquean la franja.
 - Todo documento registra revisor, fecha y decisión.
 - `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
+- El tramo vacío invierte el recorrido del viaje y reutiliza su embarcación; solo se registra
+  para viajes `ASSIGNED`/`CONFIRMED`, con regreso posterior a la salida y un tramo activo por viaje.
 
 ## Trabajo con migraciones
 

@@ -44,6 +44,12 @@ export class EnvVars {
   @Min(1)
   @Max(3600)
   AUTH_RATE_LIMIT_WINDOW_SECONDS: number = 60;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  TRIP_SLOT_HOURS: number = 2;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVars {

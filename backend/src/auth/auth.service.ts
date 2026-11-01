@@ -5,7 +5,6 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { DocumentType, Role } from '../generated/prisma/client.js';
 import type { RegisterOwnerDto } from './register-owner.dto.js';
-import type { RegisterClientDto } from './register-client.dto.js';
 import type { OwnerRegistrationFiles, UploadedDocumentFile } from '../documents/file.types.js';
 import { safeFilename, validateUploadedFile } from '../documents/file-validation.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -121,34 +120,6 @@ export class AuthService {
 		}
 	}
 
-	async registerClient(dto: RegisterClientDto): Promise<void> {
-		try {
-			const fullName = `${dto.firstName.trim()} ${dto.lastName.trim()}`;
-			await this.prisma.$transaction(async (transaction) => {
-				await transaction.user.create({
-					data: {
-						name: fullName,
-						email: dto.email.trim().toLowerCase(),
-						passwordHash: await bcrypt.hash(dto.password, 12),
-						role: Role.CLIENT,
-						client: {
-							create: {
-								nombre: fullName,
-								telefono: dto.phone.trim(),
-								email: dto.email.trim().toLowerCase(),
-							},
-						},
-					},
-				});
-			});
-		} catch (error) {
-			if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
-				return;
-			}
-			throw error;
-		}
-	}
-
 	async login(dto: LoginDto): Promise<SessionResult> {
 		const user = await this.prisma.user.findUnique({
 			where: { email: dto.email.trim().toLowerCase() },
@@ -158,7 +129,8 @@ export class AuthService {
 		if (
 			!user ||
 			user.status !== 'ACTIVE' ||
-			!(await bcrypt.compare(dto.password, user.passwordHash))
+			!(await bcrypt.compare(dto.password, user.passwordHash)) ||
+			!this.isAllowedRole(user.role)
 		) {
 			throw new UnauthorizedException('Correo o contraseña incorrectos.');
 		}
@@ -175,8 +147,12 @@ export class AuthService {
 			select: userSelection,
 		});
 
-		if (!user || user.status !== 'ACTIVE') return null;
+		if (!user || user.status !== 'ACTIVE' || !this.isAllowedRole(user.role)) return null;
 		return this.toAuthenticatedUser(user);
+	}
+
+	private isAllowedRole(role: Role): boolean {
+		return role === Role.ADMIN || role === Role.OWNER;
 	}
 
 	private createSession(user: AuthenticatedUser): SessionResult {

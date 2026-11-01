@@ -6,7 +6,6 @@ import { useHealth } from '../hooks/useHealth';
 const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Administración',
   OWNER: 'Lanchero',
-  CLIENT: 'Cliente',
 };
 
 export function RoleDashboardPage({ role }: { role: UserRole }) {
@@ -21,16 +20,10 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
         { label: 'Base de datos', value: loading ? 'Consultando' : health?.db === 'up' ? 'Conectada' : 'Sin conexión' },
         { label: 'Gestión', value: 'Sin operaciones registradas' },
       ]
-    : role === 'OWNER'
-    ? [
+    : [
         { label: 'Perfil', value: user.ownerStatus === 'APPROVED' ? 'Aprobado' : user.ownerStatus === 'REJECTED' ? 'Requiere revisión' : 'Pendiente de revisión' },
         { label: 'Embarcaciones', value: 'Todavía no hay embarcaciones' },
         { label: 'Actividad', value: 'Sin actividad registrada' },
-      ]
-    : [
-        { label: 'Cuenta', value: 'Activa' },
-        { label: 'Viajes', value: 'Los servicios se coordinan con la agencia' },
-        { label: 'Reseñas', value: 'Vas a recibir un enlace al completar un viaje' },
       ];
 
   return (
@@ -60,9 +53,7 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
           <p>
             {role === 'ADMIN'
               ? 'La gestión de viajes y verificaciones estará disponible cuando se habiliten esos módulos.'
-              : role === 'OWNER'
-              ? 'Cuando registres embarcaciones o recibas novedades, las vas a encontrar en este espacio.'
-              : 'La agencia coordina los viajes manualmente. No necesitás gestionar reservas desde esta cuenta.'}
+              : 'Cuando registres embarcaciones o recibas novedades, las vas a encontrar en este espacio.'}
           </p>
         </div>
       </section>
@@ -73,12 +64,12 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
             <Link to="/owner/solicitud" className="shortcut-link">Estado de mi solicitud <span aria-hidden="true">↗</span></Link>
             <Link to="/estado" className="shortcut-link">Estado del servicio <span aria-hidden="true">↗</span></Link>
           </>
-        ) : role === 'ADMIN' ? (
+        ) : (
           <>
             <Link to="/admin/solicitudes" className="shortcut-link">Revisar solicitudes <span aria-hidden="true">↗</span></Link>
             <Link to="/admin/viajes" className="shortcut-link">Gestionar viajes <span aria-hidden="true">↗</span></Link>
           </>
-        ) : <Link to="/" className="shortcut-link">Inicio <span aria-hidden="true">↗</span></Link>}
+        )}
       </nav>
     </section>
   );

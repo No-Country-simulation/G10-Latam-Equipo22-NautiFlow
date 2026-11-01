@@ -70,11 +70,20 @@ function AudienceCard({
 
 function Feature({ icon, title, children }: { icon: ReactNode; title: string; children: string }) {
   return (
-    <article className="feature-item">
-      <span className="feature-icon" aria-hidden="true">{icon}</span>
-      <div>
-        <h3>{title}</h3>
-        <p>{children}</p>
+    <section className="hero-section">
+      <p className="eyebrow">Transporte privado en el Delta del Tigre</p>
+      <h1>Lanchas verificadas, viajes coordinados.</h1>
+      <p className="lead">
+        NautiFlow centraliza la flota, la documentación y la reputación de los lancheros para que
+        la agencia opere con información confiable.
+      </p>
+      <div className="hero-actions">
+        <Link to="/registro/lanchero" className="button">
+          Incorporarme como lanchero
+        </Link>
+        <Link to="/estado" className="button button-ghost">
+          Ver estado del sistema
+        </Link>
       </div>
     </article>
   );

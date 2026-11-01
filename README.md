@@ -42,11 +42,11 @@ URLs:
 
 ### Autenticación
 
-Los roles son `OWNER` (lanchero), `CLIENT` (cliente con cuenta) y `ADMIN` (back-office). El login
-es común y redirige según el rol devuelto por la API. Las sesiones usan cookie `HttpOnly`,
-`SameSite=Lax` y expiración `JWT_EXPIRES_IN`; en producción también `Secure`. El navegador no
-puede leer ni persistir el JWT. `POST /api/v1/auth/logout` borra la cookie del navegador; un token
-copiado manualmente sigue válido hasta expirar.
+Los roles autenticados son `OWNER` (lanchero) y `ADMIN` (back-office). El login es común y redirige
+según el rol devuelto por la API. Las sesiones usan cookie `HttpOnly`, `SameSite=Lax` y expiración
+`JWT_EXPIRES_IN`; en producción también `Secure`. El navegador no puede leer ni persistir el JWT.
+`POST /api/v1/auth/logout` borra la cookie del navegador; un token copiado manualmente sigue válido
+hasta expirar.
 
 `POST /api/v1/auth/register/lanchero` crea cuenta, solicitud pendiente, primera embarcación y
 documentos en una transacción. Adjunta licencia, seguro y antecedentes (PDF/JPEG/PNG/WebP, máximo
@@ -55,21 +55,20 @@ documentos en una transacción. Adjunta licencia, seguro y antecedentes (PDF/JPE
 El seed también carga las zonas iniciales. En producción configurá secretos propios y
 `PUBLIC_APP_URL`; nunca uses las claves de ejemplo.
 
-`POST /api/v1/auth/register/cliente` recibe nombre, apellido, email, teléfono y contraseña; el
-servidor asigna `CLIENT` y asocia la cuenta al modelo `Cliente`. Ambos registros responden de forma
-genérica y requieren iniciar sesión después. Ejecutá `docker compose exec backend npx prisma migrate
-deploy` para aplicar también la migración `client_account_role`.
+No existe alta ni inicio de sesión de cuentas de cliente. El turista accede a la landing pública y
+puede dejar una reseña mediante el enlace único de un viaje completado. Los clientes de la agencia
+son registros de contacto (nombre, teléfono y email opcional) que crea el administrador al registrar
+un viaje; no tienen cuenta ni credenciales.
 
 El alta ADMIN es solo por seed controlado (no hay autorregistro/invitación). La agencia revisa
 documentos en `ADMIN → Solicitudes`, aprueba el perfil y luego gestiona viajes/clientes desde
-`ADMIN → Viajes`. Los clientes con cuenta usan el rol `CLIENT`; el turista también puede reseñar
-sin crear cuenta. Al completar un viaje, el admin genera un enlace válido por 14 días y de un solo
-uso. Documentos se guardan como bytes privados en
-PostgreSQL y se descargan únicamente con sesión del propietario o admin.
+`ADMIN → Viajes`. Al completar un viaje, el admin genera un enlace válido por 14 días y de un solo
+uso. Documentos se guardan como bytes privados en PostgreSQL y se descargan únicamente con sesión
+del propietario o admin.
 
-Rutas protegidas: `/owner/dashboard`, `/owner/solicitud`, `/client/dashboard`, `/admin/dashboard`,
-`/admin/solicitudes` y `/admin/viajes`; `/dashboard` redirige según el rol. `/reviews/:token` es
-pública y no requiere cuenta.
+Rutas protegidas: `/owner/dashboard`, `/owner/solicitud`, `/admin/dashboard`, `/admin/solicitudes`
+y `/admin/viajes`; `/dashboard` redirige según el rol. `/reviews/:token` es pública y no requiere
+cuenta.
 
 #### Cuentas demo locales
 
@@ -78,13 +77,12 @@ explícito, `NODE_ENV=development`, genera hashes bcrypt y usa `upsert` sin actu
 existentes. Las contraseñas se pasan al proceso, no se guardan en `.env` ni en el repositorio.
 
 ```powershell
-docker compose exec -e NODE_ENV=development -e SEED_DEMO_USERS=true -e SEED_ADMIN_EMAIL= -e SEED_ADMIN_PASSWORD= -e "SEED_DEMO_OWNER_PASSWORD=LanchaDev2026!" -e "SEED_DEMO_CLIENT_PASSWORD=ClienteDev2026!" -e "SEED_DEMO_ADMIN_PASSWORD=AdminDev2026!" backend npm run prisma:seed
+docker compose exec -e NODE_ENV=development -e SEED_DEMO_USERS=true -e SEED_ADMIN_EMAIL= -e SEED_ADMIN_PASSWORD= -e "SEED_DEMO_OWNER_PASSWORD=LanchaDev2026!" -e "SEED_DEMO_ADMIN_PASSWORD=AdminDev2026!" backend npm run prisma:seed
 ```
 
 | Cuenta | Email | Rol | Dashboard |
 | --- | --- | --- | --- |
 | Carlos Ramírez | `lanchero@nautiflow.test` | `OWNER` (pendiente) | `/owner/dashboard` |
-| María González | `cliente@nautiflow.test` | `CLIENT` | `/client/dashboard` |
 | Admin NautiFlow | `admin@nautiflow.test` | `ADMIN` | `/admin/dashboard` |
 
 Después del seed, iniciar sesión en `/login` con el email y contraseña de cada cuenta. El OWNER

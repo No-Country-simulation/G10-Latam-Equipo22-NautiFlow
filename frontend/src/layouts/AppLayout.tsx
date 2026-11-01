@@ -55,12 +55,7 @@ export function AppLayout() {
               <button type="button" className="nav-cta" onClick={handleLogout}>Salir</button>
             </>
           ) : (
-            <>
-              <NavLink to="/">Inicio</NavLink>
-              <NavLink to="/estado">Estado</NavLink>
-              <NavLink to="/registro/cliente">Crear cuenta</NavLink>
-              <NavLink to="/login" className="nav-cta">Ingresar</NavLink>
-            </>
+            <NavLink to="/login" className="nav-cta">Ingresar</NavLink>
           )}
         </nav>
       </header>

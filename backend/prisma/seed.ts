@@ -52,20 +52,17 @@ async function main() {
 
       const demoPasswords = {
         owner: process.env.SEED_DEMO_OWNER_PASSWORD,
-        client: process.env.SEED_DEMO_CLIENT_PASSWORD,
         admin: process.env.SEED_DEMO_ADMIN_PASSWORD,
       };
       if (Object.values(demoPasswords).some((password) => !password || password.length < 12)) {
-        throw new Error('Definí las tres contraseñas demo, cada una con al menos 12 caracteres.');
+        throw new Error('Definí las contraseñas demo de lanchero y admin, cada una con al menos 12 caracteres.');
       }
 
       const ownerEmail = 'lanchero@nautiflow.test';
-      const clientEmail = 'cliente@nautiflow.test';
       const demoAdminEmail = 'admin@nautiflow.test';
 
-      const [ownerHash, clientHash, demoAdminHash] = await Promise.all([
+      const [ownerHash, demoAdminHash] = await Promise.all([
         bcrypt.hash(demoPasswords.owner!, 12),
-        bcrypt.hash(demoPasswords.client!, 12),
         bcrypt.hash(demoPasswords.admin!, 12),
       ]);
 
@@ -80,23 +77,6 @@ async function main() {
           owner: { create: { status: 'PENDING' } },
         },
       });
-      const client = await prisma.user.upsert({
-        where: { email: clientEmail },
-        update: {},
-        create: {
-          name: 'María González',
-          email: clientEmail,
-          passwordHash: clientHash,
-          role: 'CLIENT',
-          client: {
-            create: {
-              nombre: 'María González',
-              telefono: '+540000000000',
-              email: clientEmail,
-            },
-          },
-        },
-      });
       const demoAdmin = await prisma.user.upsert({
         where: { email: demoAdminEmail },
         update: {},
@@ -108,7 +88,7 @@ async function main() {
         },
       });
 
-      console.log(`Usuarios demo listos (sin actualizar registros existentes): ${owner.email}, ${client.email}, ${demoAdmin.email}`);
+      console.log(`Usuarios demo listos (sin actualizar registros existentes): ${owner.email}, ${demoAdmin.email}`);
     }
   } finally {
     await prisma.$disconnect();
