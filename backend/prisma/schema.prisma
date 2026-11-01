@@ -57,6 +57,27 @@ enum EmptyLegStatus {
   CLOSED
 }
 
+/// Estado de una salida en el catálogo público.
+enum EstadoSalida {
+  PROGRAMADA
+  CANCELADA
+  COMPLETADA
+}
+
+/// Estado de un tramo dentro de una salida.
+enum EstadoTramo {
+  DISPONIBLE
+  RESERVADO
+  CERRADO
+  CANCELADO
+}
+
+/// Tipo de tramo dentro de una salida.
+enum TipoTramo {
+  IDA
+  VUELTA
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String
@@ -72,6 +93,7 @@ model User {
   ownerReviews Owner[] @relation("OwnerReviewedBy")
   reviewedDocuments OwnerDocument[] @relation("DocumentReviewedBy")
   createdTrips Trip[] @relation("TripCreatedBy")
+  createdSalidas Salida[] @relation("SalidaCreatedBy")
 
   @@map("users")
 }
@@ -135,6 +157,7 @@ model Embarcacion {
   viajes Trip[]
   reviews Review[]
   emptyLegs EmptyLeg[]
+  salidas Salida[]
 
   @@map("embarcaciones")
 }
@@ -202,6 +225,10 @@ model Trip {
   origin         String
   destination    String
   status         TripStatus @default(PENDING)
+  salidaId       String?    @db.Uuid
+  salida         Salida?    @relation(fields: [salidaId], references: [id], onDelete: SetNull)
+  tramoId        String?    @db.Uuid
+  tramo          Tramo?     @relation(fields: [tramoId], references: [id], onDelete: SetNull)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   reviewToken    ReviewToken?
@@ -210,7 +237,50 @@ model Trip {
 
   @@index([status, scheduledAt])
   @@index([embarcacionId, scheduledAt])
+  @@index([tramoId])
   @@map("trips")
+}
+
+/// Salida publicable en el catálogo de viajes.
+model Salida {
+  id             String       @id @default(uuid()) @db.Uuid
+  embarcacionId  String       @db.Uuid
+  embarcacion    Embarcacion  @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
+  createdById    String       @db.Uuid
+  createdBy      User         @relation("SalidaCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  fechaSalida    DateTime
+  estado         EstadoSalida @default(PROGRAMADA)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tramos Tramo[]
+  trips  Trip[]
+
+  @@index([estado, fechaSalida])
+  @@map("salidas")
+}
+
+/// Tramo (ida/vuelta) dentro de una salida; precio y cupo por tramo.
+model Tramo {
+  id             String       @id @default(uuid()) @db.Uuid
+  salidaId       String       @db.Uuid
+  salida         Salida       @relation(fields: [salidaId], references: [id], onDelete: Cascade)
+  tipo           TipoTramo
+  origen         String
+  destino        String
+  fechaHora      DateTime
+  cupo           Int
+  precioCentavos Int
+  sinTuristas    Boolean      @default(false)
+  estado         EstadoTramo @default(DISPONIBLE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  trips Trip[]
+
+  @@index([salidaId, tipo])
+  @@index([estado, fechaHora])
+  @@map("tramos")
 }
 
 /// Tramo de regreso sin pasajeros que nace de un viaje de ida.
