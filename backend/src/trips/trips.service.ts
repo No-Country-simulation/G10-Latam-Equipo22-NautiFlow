@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, TripStatus } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BoatScheduleService } from '../boats/boat-schedule.service.js';
 import type { CreateTripDto } from './create-trip.dto.js';
 
 @Injectable()
 export class TripsService {
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly config: ConfigService,
+		private readonly schedule: BoatScheduleService,
 	) {}
 
 	list() {
@@ -32,7 +32,7 @@ export class TripsService {
 		const scheduledAt = new Date(dto.scheduledAt);
 		const boat = dto.boatId ? await this.getApprovedBoat(dto.boatId, dto.passengerCount) : null;
 		if (boat) {
-			await this.assertBoatSlotAvailable(boat.id, scheduledAt);
+			await this.schedule.assertSlotAvailable(boat.id, scheduledAt);
 		}
 		return this.prisma.$transaction(async (transaction) => {
 			const client = dto.clientEmail
@@ -107,32 +107,12 @@ export class TripsService {
 		if (!trip) throw new NotFoundException('No se encontró el viaje.');
 		if (trip.status !== TripStatus.PENDING) throw new BadRequestException('El viaje ya fue asignado o cerrado.');
 		const boat = await this.getApprovedBoat(boatId, trip.passengerCount);
-		await this.assertBoatSlotAvailable(boat.id, trip.scheduledAt, trip.id);
+		await this.schedule.assertSlotAvailable(boat.id, trip.scheduledAt, trip.id);
 		return this.prisma.trip.update({
 			where: { id },
 			data: { embarcacionId: boat.id, status: TripStatus.ASSIGNED },
 			select: { id: true, status: true, embarcacionId: true },
 		});
-	}
-
-	private async assertBoatSlotAvailable(boatId: string, scheduledAt: Date, excludeTripId?: string) {
-		const hours = this.config.get<number>('TRIP_SLOT_HOURS') ?? 2;
-		const margin = hours * 60 * 60 * 1000;
-		const conflict = await this.prisma.trip.findFirst({
-			where: {
-				embarcacionId: boatId,
-				...(excludeTripId ? { id: { not: excludeTripId } } : {}),
-				status: { notIn: [TripStatus.CANCELLED, TripStatus.COMPLETED] },
-				scheduledAt: {
-					gte: new Date(scheduledAt.getTime() - margin),
-					lte: new Date(scheduledAt.getTime() + margin),
-				},
-			},
-			select: { id: true },
-		});
-		if (conflict) {
-			throw new ConflictException('La embarcación ya tiene un viaje asignado en esa franja horaria.');
-		}
 	}
 
 	private async getApprovedBoat(id: string, passengers: number) {

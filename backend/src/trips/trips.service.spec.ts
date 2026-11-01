@@ -1,5 +1,4 @@
-import { ConflictException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	EstadoEmbarcacion,
@@ -7,15 +6,17 @@ import {
 	TripStatus,
 } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BoatScheduleService } from '../boats/boat-schedule.service.js';
 import { TripsService } from './trips.service.js';
 
 const scheduledAt = new Date('2026-11-05T12:00:00.000Z');
 
-function createService(prismaMock: object, slotHours = 2) {
-	const config = {
-		get: (key: string) => (key === 'TRIP_SLOT_HOURS' ? slotHours : undefined),
-	} as unknown as ConfigService;
-	return new TripsService(prismaMock as unknown as PrismaService, config);
+function createService(prismaMock: object, scheduleOverride?: Partial<BoatScheduleService>) {
+	const schedule = {
+		assertSlotAvailable: vi.fn().mockResolvedValue(undefined),
+		...scheduleOverride,
+	} as unknown as BoatScheduleService;
+	return { service: new TripsService(prismaMock as unknown as PrismaService, schedule), schedule };
 }
 
 function prismaMock({
@@ -31,20 +32,18 @@ function prismaMock({
 		estado: EstadoEmbarcacion.VERIFICADA,
 		propietario: { status: OwnerStatus.APPROVED },
 	},
-	conflict = null,
 	created = { id: 'uuid-viaje' },
 	updated = { id: 'uuid-viaje', status: TripStatus.ASSIGNED, embarcacionId: 'uuid-lancha' },
 }: {
 	trip?: object | null;
 	boat?: object | null;
-	conflict?: object | null;
 	created?: object;
 	updated?: object;
 } = {}) {
 	const prisma = {
 		trip: {
 			findUnique: vi.fn().mockResolvedValue(trip),
-			findFirst: vi.fn().mockResolvedValue(conflict),
+			findFirst: vi.fn().mockResolvedValue(null),
 			create: vi.fn().mockResolvedValue(created),
 			update: vi.fn().mockResolvedValue(updated),
 		},
@@ -78,34 +77,27 @@ describe('TripsService', () => {
 
 	describe('assignBoat', () => {
 		it('rechaza una embarcación ocupada en la misma franja', async () => {
-			const prisma = prismaMock({ conflict: { id: 'uuid-otro-viaje' } });
-			const service = createService(prisma);
+			const prisma = prismaMock();
+			const { service, schedule } = createService(prisma, {
+				assertSlotAvailable: vi.fn().mockRejectedValue(
+					new ConflictException('La embarcación ya tiene un viaje o salida asignado en esa franja horaria.'),
+				),
+			});
 
 			await expect(service.assignBoat('uuid-viaje', 'uuid-lancha')).rejects.toBeInstanceOf(
 				ConflictException,
 			);
 			expect(prisma.trip.update).not.toHaveBeenCalled();
+			expect(schedule.assertSlotAvailable).toHaveBeenCalledWith('uuid-lancha', scheduledAt, 'uuid-viaje');
 		});
 
-		it('ignora viajes cancelados o completados al buscar conflictos', async () => {
+		it('asigna la embarcación cuando no hay conflicto', async () => {
 			const prisma = prismaMock();
-			const service = createService(prisma);
+			const { service, schedule } = createService(prisma);
 
 			await service.assignBoat('uuid-viaje', 'uuid-lancha');
 
-			expect(prisma.trip.findFirst).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						embarcacionId: 'uuid-lancha',
-						id: { not: 'uuid-viaje' },
-						status: { notIn: [TripStatus.CANCELLED, TripStatus.COMPLETED] },
-						scheduledAt: {
-							gte: new Date(scheduledAt.getTime() - 2 * 60 * 60 * 1000),
-							lte: new Date(scheduledAt.getTime() + 2 * 60 * 60 * 1000),
-						},
-					}),
-				}),
-			);
+			expect(schedule.assertSlotAvailable).toHaveBeenCalledWith('uuid-lancha', scheduledAt, 'uuid-viaje');
 			expect(prisma.trip.update).toHaveBeenCalledWith(
 				expect.objectContaining({
 					data: { embarcacionId: 'uuid-lancha', status: TripStatus.ASSIGNED },
@@ -113,43 +105,50 @@ describe('TripsService', () => {
 			);
 		});
 
-		it('respeta la ventana configurada', async () => {
-			const prisma = prismaMock();
-			const service = createService(prisma, 4);
+		it('rechaza si el viaje ya fue asignado', async () => {
+			const prisma = prismaMock({
+				trip: { id: 'uuid-viaje', status: TripStatus.ASSIGNED, passengerCount: 4, scheduledAt },
+			});
+			const { service } = createService(prisma);
 
-			await service.assignBoat('uuid-viaje', 'uuid-lancha');
+			await expect(service.assignBoat('uuid-viaje', 'uuid-lancha')).rejects.toBeInstanceOf(
+				BadRequestException,
+			);
+		});
 
-			expect(prisma.trip.findFirst).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						scheduledAt: {
-							gte: new Date(scheduledAt.getTime() - 4 * 60 * 60 * 1000),
-							lte: new Date(scheduledAt.getTime() + 4 * 60 * 60 * 1000),
-						},
-					}),
-				}),
+		it('rechaza si la embarcación no existe', async () => {
+			const prisma = prismaMock({ boat: null });
+			const { service } = createService(prisma);
+
+			await expect(service.assignBoat('uuid-viaje', 'uuid-lancha')).rejects.toBeInstanceOf(
+				NotFoundException,
 			);
 		});
 	});
 
 	describe('create', () => {
 		it('rechaza un viaje nuevo con la embarcación ocupada', async () => {
-			const prisma = prismaMock({ conflict: { id: 'uuid-otro-viaje' } });
-			const service = createService(prisma);
+			const prisma = prismaMock();
+			const { service, schedule } = createService(prisma, {
+				assertSlotAvailable: vi.fn().mockRejectedValue(
+					new ConflictException('La embarcación ya tiene un viaje o salida asignado en esa franja horaria.'),
+				),
+			});
 
 			await expect(service.create(tripDto({ boatId: 'uuid-lancha' }), 'uuid-admin')).rejects.toBeInstanceOf(
 				ConflictException,
 			);
 			expect(prisma.trip.create).not.toHaveBeenCalled();
+			expect(schedule.assertSlotAvailable).toHaveBeenCalledWith('uuid-lancha', scheduledAt);
 		});
 
 		it('no busca conflictos si el viaje se crea sin embarcación', async () => {
 			const prisma = prismaMock();
-			const service = createService(prisma);
+			const { service, schedule } = createService(prisma);
 
 			await service.create(tripDto(), 'uuid-admin');
 
-			expect(prisma.trip.findFirst).not.toHaveBeenCalled();
+			expect(schedule.assertSlotAvailable).not.toHaveBeenCalled();
 			expect(prisma.trip.create).toHaveBeenCalledWith(
 				expect.objectContaining({
 					data: expect.objectContaining({
