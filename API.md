@@ -85,6 +85,12 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
 | POST | `/admin/empty-legs` | ADMIN | Registrar tramo vacío de regreso |
 | GET | `/admin/empty-legs` | ADMIN | Listar tramos vacíos con filtros y paginación |
+| POST | `/admin/salidas` | ADMIN | Crear salida con tramos (ida/vuelta) |
+| GET | `/admin/salidas` | ADMIN | Listar salidas con filtros y paginación |
+| GET | `/admin/salidas/:id` | ADMIN | Detalle de salida con tramos |
+| PATCH | `/admin/salidas/:id` | ADMIN | Actualizar estado o fecha de salida |
+| GET | `/public/salidas` | Público | Catálogo de salidas disponibles con filtros |
+| GET | `/public/salidas/:id` | Público | Detalle público de salida con tramos y rating |
 | POST | `/admin/trips/:id/review-link` | ADMIN | Generar enlace único de reseña |
 | GET | `/public/reviews/:token` | Público | Validar token y contexto |
 | POST | `/public/reviews/:token` | Público | Enviar calificación |
@@ -190,6 +196,48 @@ Lista paginada ordenada por hora de regreso. `status` filtra por estado (por def
 `AVAILABLE`); `page` y `limit` siguen la convención general. Cada fila incluye la lancha, el
 lanchero y los datos del viaje de origen.
 
+## Catálogo de salidas
+
+`POST /api/v1/admin/salidas` crea una salida con sus tramos en una transacción. Recibe JSON:
+
+```json
+{
+  "embarcacionId": "uuid",
+  "fechaSalida": "2026-11-01T10:00:00.000Z",
+  "tramos": [
+    { "tipo": "IDA", "origen": "Delta del Tigre", "destino": "Tigre Centro", "fechaHora": "2026-11-01T10:00:00.000Z", "precioCentavos": 50000 },
+    { "tipo": "VUELTA", "origen": "Tigre Centro", "destino": "Delta del Tigre", "fechaHora": "2026-11-01T18:00:00.000Z", "precioCentavos": 40000, "sinTuristas": true, "cupo": 8 }
+  ]
+}
+```
+
+Reglas:
+- La lancha debe estar `VERIFICADA`, el lanchero `APPROVED` y el usuario `ACTIVE`.
+- `fechaSalida` debe ser futura.
+- Exactamente un tramo `IDA` y como máximo uno `VUELTA`.
+- El tramo de IDA no puede ser anterior a la salida; el de VUELTA debe ser posterior.
+- `cupo` por defecto igual a la capacidad de la lancha (0 a 100).
+- `precioCentavos` en centavos, mínimo 0.
+- `sinTuristas` marca un tramo de regreso vacío (default `false`).
+- No puede superponerse con otros viajes o salidas de la misma lancha en `TRIP_SLOT_HOURS`.
+
+`GET /api/v1/public/salidas` lista salidas `PROGRAMADA` futuras de lanchas elegibles. Filtros:
+
+| Query | Tipo | Descripción |
+| --- | --- | --- |
+| `zonaId` | UUID | Zona que debe cubrir la lancha |
+| `fechaDesde` / `fechaHasta` | fecha ISO | Rango de fecha de salida |
+| `origen` / `destino` | texto | Filtra por el tramo IDA |
+| `page` / `limit` | entero | Convención general |
+
+Cada item incluye lancha pública, rating de la embarcación, tramos con precio/cupo y un campo
+`disponible` que indica si algún tramo está `DISPONIBLE` con cupo > 0.
+
+`GET /api/v1/public/salidas/:id` devuelve el detalle con las últimas 5 reseñas de la lancha.
+
+`PATCH /api/v1/admin/salidas/:id` actualiza `estado` (`PROGRAMADA`, `CANCELADA`, `COMPLETADA`) o
+`fechaSalida` (con re-validación de disponibilidad).
+
 ## Contrato planificado
 
 | Módulo | Método y ruta | Rol | Uso |
@@ -241,10 +289,11 @@ las cuentas `CLIENT` legadas ya no pueden iniciar sesión.
 Las decisiones admin reciben `{ "decision": "APPROVED" | "REJECTED", "note": "..." }`. Aprobar
 un perfil requiere que licencia, seguro y antecedentes estén aprobados. Las operaciones de viaje
 crean o reutilizan cliente por email opcional; solo asignan lanchas y lancheros aprobados con
-capacidad suficiente. Una lancha no puede quedar en dos viajes activos dentro de la misma franja:
-se rechaza con `409` si hay otro viaje `PENDING`/`ASSIGNED`/`CONFIRMED` a menos de `TRIP_SLOT_HOURS`
-horas (2 por defecto), tanto al crear el viaje con embarcación como al asignarla después. No hay
-endpoint ni formulario público de alta ADMIN: el primer administrador se crea con el seed.
+capacidad suficiente. Una lancha no puede quedar en dos viajes o salidas activos dentro de la
+misma franja: se rechaza con `409` si hay otro viaje `PENDING`/`ASSIGNED`/`CONFIRMED` o salida
+`PROGRAMADA` a menos de `TRIP_SLOT_HOURS` horas (2 por defecto), tanto al crear viajes o salidas
+como al asignar embarcaciones. No hay endpoint ni formulario público de alta ADMIN: el primer
+administrador se crea con el seed.
 
 Los enlaces de reseña contienen 32 bytes aleatorios codificados en base64url. En la base solo se
 guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los consume atómicamente.
