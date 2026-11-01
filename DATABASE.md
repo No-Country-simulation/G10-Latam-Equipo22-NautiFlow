@@ -75,10 +75,12 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | --- | --- |
 | OwnerDocument | owner/boat, tipo, bytes privados, MIME/size, estado, observación, fechas y admin revisor |
 | Cliente | nombre, teléfono, email opcional único; no tiene cuenta |
-| Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional |
+| Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional, salida/tramo opcional |
 | ReviewToken | trip único, hash SHA-256, expiración, uso y creación |
 | Review | trip único, embarcación opcional, rating (1–5), comentario |
-| EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado |
+| EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado (legacy) |
+| Salida | embarcación, fecha/hora de salida, estado, admin creador; contiene tramos |
+| Tramo | salida, tipo IDA/VUELTA, origen/destino, fecha/hora, cupo, precio en centavos, `sinTuristas`, estado |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
 ## Relaciones previstas
@@ -87,7 +89,9 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Una `Embarcacion` cubre varias `Zona` (M:N) y tendrá varios documentos.
 - Una `Embarcacion` realizará varios `Trip` y podrá recibir varias reseñas.
 - Un `Trip` completado habilita como máximo una `Review`.
-- Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa.
+- Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa (legacy).
+- Una `Salida` tiene uno o más `Tramo` (ida y vuelta opcional).
+- Un `Trip` puede vincularse opcionalmente a una `Salida` y `Tramo` cuando nace de una reserva.
 
 ## Estados
 
@@ -97,7 +101,9 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | Embarcación | Pendiente · Verificada · Rechazada · Inactiva |
 | Documento | Pendiente · Aprobado · Rechazado |
 | Viaje | Pendiente · Asignado · Confirmado · Completado · Cancelado |
-| Tramo vacío | Disponible · Ofrecido · Asignado · Cerrado |
+| Tramo vacío | Disponible · Ofrecido · Asignado · Cerrado (legacy) |
+| Salida | Programada · Cancelada · Completada |
+| Tramo de salida | Disponible · Reservado · Cerrado · Cancelado |
 
 ## Reglas de integridad
 
@@ -106,8 +112,9 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - El token es aleatorio y se guarda como hash, nunca en claro.
 - Una embarcación con documentos rechazados no aparece como elegible.
 - La asignación de viaje es una acción explícita del administrador.
-- Una embarcación no puede tener dos viajes activos dentro de `TRIP_SLOT_HOURS` horas (2 por
-  defecto); los viajes `CANCELLED` y `COMPLETED` no bloquean la franja.
+- Una embarcación no puede tener dos viajes o salidas activos dentro de `TRIP_SLOT_HOURS` horas
+  (2 por defecto); los viajes `CANCELLED`/`COMPLETED` y las salidas `CANCELADA`/`COMPLETADA` no
+  bloquean la franja.
 - Todo documento registra revisor, fecha y decisión.
 - `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.

@@ -30,7 +30,8 @@ actualizar reputación.
 ## Límites del MVP
 
 - La verificación de identidad y documentación es manual (sin APIs gubernamentales).
-- El turista no gestiona reservas: solo deja reseñas con un token único.
+- El turista no crea cuenta: consulta el catálogo público y solicita reserva; el admin confirma
+  por WhatsApp. El turista también deja reseñas con un token único.
 - La búsqueda filtra; no asigna automáticamente por GPS ni implementa un algoritmo tipo Uber.
 - La bolsa de tramos vacíos es un tablero interno, sin subastas ni notificaciones geolocalizadas.
 - WhatsApp se usa mediante enlaces `wa.me` con mensaje prearmado.

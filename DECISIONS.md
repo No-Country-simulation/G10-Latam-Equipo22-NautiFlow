@@ -117,6 +117,28 @@ marcadas como **pendientes** requieren acuerdo del equipo.
 - **Responsable:** equipo Full Stack.
 - **Estado:** aprobada.
 
+## D-012 — Catálogo público con modelo Salida + Tramo (opción C)
+
+- **Fecha:** 2026-11-01
+- **Decisión:** el catálogo público se modela con `Salida` y `Tramo` como calendario vendible
+  independiente. `Trip` referencia opcionalmente la salida/tramo cuando nace de una reserva.
+  - `cupo` por tramo, inicializado con la capacidad de la lancha, ajustable manualmente.
+  - `precioCentavos` vive en el tramo (ida y vuelta pueden tener precios distintos).
+  - `sinTuristas` marca tramos de regreso vacío en el catálogo.
+  - Las reservas permiten confirmar hasta agotar el cupo; la reserva no descuenta cupo de forma
+    automática, el admin gestiona la disponibilidad.
+  - `EmptyLeg` (US-12) queda como legado interno; la migración a `Tramo.sinTuristas` es una
+    tarea TECH posterior.
+- **Alternativas:** derivar el catálogo de `Trip`/`EmptyLeg` sin tablas nuevas (B); modelo
+  independiente sin vínculo a `Trip` (A).
+- **Motivo:** la opción C evita duplicar inventario y deja una trazabilidad clara entre catálogo,
+  reserva y viaje operativo.
+- **Consecuencia:** se agregan las tablas `salidas` y `tramos` con migración aditiva. La
+  disponibilidad de lancha se valida contra viajes y salidas con la misma ventana
+  `TRIP_SLOT_HOURS`. `EmptyLeg` convive temporalmente con `Tramo`.
+- **Responsable:** equipo Full Stack.
+- **Estado:** aprobada.
+
 ## Decisiones pendientes
 
 | Tema | Propuesta inicial | Pregunta |
