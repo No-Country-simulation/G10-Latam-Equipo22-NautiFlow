@@ -85,7 +85,7 @@ function Feature({ icon, title, children }: { icon: ReactNode; title: string; ch
           Ver estado del sistema
         </Link>
       </div>
-    </article>
+    </section>
   );
 }
 
