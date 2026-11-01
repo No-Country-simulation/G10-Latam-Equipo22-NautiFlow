@@ -10,6 +10,7 @@ import { EmptyLegsModule } from './empty-legs/empty-legs.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { OwnersModule } from './owners/owners.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
+import { SalidasModule } from './salidas/salidas.module.js';
 import { TripsModule } from './trips/trips.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VerificationModule } from './verification/verification.module.js';
@@ -34,6 +35,7 @@ import { ZonesModule } from './zones/zones.module.js';
     TripsModule,
     ReviewsModule,
     EmptyLegsModule,
+    SalidasModule,
     NotificationsModule,
   ],
 })
