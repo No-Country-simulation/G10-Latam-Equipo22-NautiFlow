@@ -24,14 +24,20 @@ actualizar reputación.
 
 - **Etapa 1 completada en su base**: estructura, Docker, Prisma (User/Owner), CI, Swagger y
   endpoint de salud integrado de punta a punta.
+- **Etapa 3 avanzada en backend**: revisión de solicitudes y documentos, viajes con asignación y
+  transiciones, catálogo público de salidas con tramos (`US-17`), reservas de tramos
+  (`US-18`: solicitud pública, confirmación con descuento de cupo y cancelación con restauración)
+  y contadores del panel (`GET /admin/dashboard/resumen`). Pendiente el frontend de `US-15` y
+  `TECH-20` (paginación de listados admin).
 - **Sprint 1 en curso**: login del lanchero (`POST /auth/login`, `GET /auth/me`) consumido desde
   React y validado por QA.
 
 ## Límites del MVP
 
 - La verificación de identidad y documentación es manual (sin APIs gubernamentales).
-- El turista no crea cuenta: consulta el catálogo público y solicita reserva; el admin confirma
-  por WhatsApp. El turista también deja reseñas con un token único.
+- El turista no crea cuenta: consulta el catálogo público, solicita reserva sin registrarse y el
+  admin la confirma o rechaza desde el panel (el contacto posterior puede seguir por WhatsApp).
+  El turista también deja reseñas con un token único.
 - La búsqueda filtra; no asigna automáticamente por GPS ni implementa un algoritmo tipo Uber.
 - La bolsa de tramos vacíos es un tablero interno, sin subastas ni notificaciones geolocalizadas.
 - WhatsApp se usa mediante enlaces `wa.me` con mensaje prearmado.

@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, TripStatus } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from '../boats/boat-schedule.service.js';
+import { ReservasService } from '../reservas/reservas.service.js';
 import type { CreateTripDto } from './create-trip.dto.js';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class TripsService {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly schedule: BoatScheduleService,
+		private readonly reservas: ReservasService,
 	) {}
 
 	list() {
@@ -92,10 +94,16 @@ export class TripsService {
 		if (!allowedTransitions[trip.status].includes(status)) {
 			throw new BadRequestException('La transición de estado del viaje no está permitida.');
 		}
-		return this.prisma.trip.update({
-			where: { id },
-			data: { status },
-			select: { id: true, status: true, scheduledAt: true },
+		return this.prisma.$transaction(async (transaction) => {
+			const actualizado = await transaction.trip.update({
+				where: { id },
+				data: { status },
+				select: { id: true, status: true, scheduledAt: true },
+			});
+			if (status === TripStatus.CANCELLED) {
+				await this.reservas.anularPorViaje(transaction, id);
+			}
+			return actualizado;
 		});
 	}
 

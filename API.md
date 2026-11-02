@@ -98,6 +98,12 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | GET | `/public/boats` | Público | Catálogo de embarcaciones verificadas con su reputación |
 | GET | `/public/boats/:id` | Público | Detalle público con promedio y últimas reseñas |
 | GET | `/public/boats/:id/reviews` | Público | Reseñas públicas de una embarcación |
+| POST | `/public/reservas` | Público | Crear solicitud de reserva sin cuenta (rate limit) |
+| GET | `/admin/reservas` | ADMIN | Listar reservas con filtros y paginación |
+| GET | `/admin/reservas/:id` | ADMIN | Detalle de una reserva |
+| POST | `/admin/reservas/:id/confirmar` | ADMIN | Confirmar reserva, descontar cupo y crear viaje |
+| PATCH | `/admin/reservas/:id/estado` | ADMIN | Rechazar o cancelar reserva (restaura cupo) |
+| GET | `/admin/dashboard/resumen` | ADMIN | Contadores del panel administrativo |
 
 ### `GET /api/v1/health`
 
@@ -255,6 +261,71 @@ Al cambiar `fechaHora`, se re-valida la disponibilidad contra otras salidas/viaj
 tramos de la misma salida. El tramo IDA no puede quedar anterior a la salida; el VUELTA debe ser
 posterior.
 
+## Reservas
+
+`POST /api/v1/public/reservas` crea una solicitud de reserva sin cuenta de usuario:
+
+```json
+{
+  "tramoId": "uuid",
+  "nombre": "María Pérez",
+  "telefono": "+5491100000000",
+  "email": "maria@correo.com",
+  "cantidadPasajeros": 2,
+  "mensaje": "Llegamos 10 minutos antes"
+}
+```
+
+Reglas:
+- `nombre` (2–80), `telefono` (8–20) y `cantidadPasajeros` (1–50) son obligatorios; `email` y
+  `mensaje` son opcionales.
+- El tramo debe existir, estar `DISPONIBLE`, con salida `PROGRAMADA` futura y fecha futura.
+- Debe haber cupo ≥ `cantidadPasajeros` y la cantidad no puede superar la capacidad de la lancha.
+- La embarcación debe estar `VERIFICADA` con lanchero `APPROVED` y usuario `ACTIVE`.
+- La reserva nace `PENDIENTE` **sin descontar cupo** y guarda un snapshot de `origen`, `destino`,
+  `fechaHora` y `precioCentavos`.
+- Responde `201` con la reserva; `404` si el tramo no existe, `409` si no está disponible y `429`
+  por rate limit (`POST /public/reservas` usa el mismo contador que login y registro).
+
+Gestión admin:
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| GET | `/admin/reservas` | Listado paginado. Filtros: `estado`, `salidaId`, `tramoId`, `fechaDesde`/`fechaHasta` (sobre `createdAt`) y `q` (nombre, teléfono o email) |
+| GET | `/admin/reservas/:id` | Detalle con tramo, salida, lancha, cliente y viaje vinculado |
+| POST | `/admin/reservas/:id/confirmar` | Confirma la reserva `PENDIENTE` |
+| PATCH | `/admin/reservas/:id/estado` | `{ "estado": "RECHAZADA" \| "CANCELADA", "nota": "..." }` |
+
+`confirmar` corre en una transacción:
+1. Re-valida la disponibilidad de la franja de la lancha excluyendo la salida y el tramo de la
+   propia reserva.
+2. Descuenta el cupo con un `updateMany` condicional (`estado = DISPONIBLE` y `cupo ≥ cantidad`);
+   si nadie lo tomó responde `409`.
+3. Si el cupo llega a 0, cierra el tramo (`CERRADO`); el admin lo reabre a mano.
+4. Crea o reutiliza cliente por email y crea el `Trip` `CONFIRMED` vinculado (`salidaId`, `tramoId`).
+5. Marca la reserva `CONFIRMADA` con `cupoDescontado: true`.
+
+`PATCH /admin/reservas/:id/estado` admite solo transiciones desde `PENDIENTE` (a `RECHAZADA` o
+`CANCELADA`) y desde `CONFIRMADA` (únicamente a `CANCELADA`). Cancelar
+una reserva confirmada restaura el cupo (y reabre el tramo si estaba `CERRADO`), deja su viaje en
+`CANCELLED` y limpia `cupoDescontado` para no restaurar dos veces. No se permite cancelar si el
+viaje ya está `COMPLETED` (`409`).
+
+Cancelar un viaje desde `PATCH /admin/trips/:id/status` anula automáticamente la reserva vinculada
+con las mismas reglas de restauración.
+
+### `GET /api/v1/admin/dashboard/resumen` (ADMIN)
+
+```json
+{
+  "reservasPendientes": 3,
+  "viajesPorOperar": 5,
+  "solicitudesLancheroPendientes": 2,
+  "documentosPendientes": 7,
+  "salidasProgramadas": 4
+}
+```
+
 ## Contrato planificado
 
 | Módulo | Método y ruta | Rol | Uso |
@@ -319,14 +390,16 @@ guarda SHA-256, tienen validez de 14 días y `POST /public/reviews/:token` los c
 ## Autenticación
 
 - JWT en cookie HttpOnly (también se acepta `Authorization: Bearer <token>` para clientes API).
-- `ADMIN` accede a revisión, documentos y viajes; `OWNER` a su estado, sus documentos y sus embarcaciones.
-- No existen cuentas de cliente ni dashboard de turista. El turista entra por un enlace con token
-  de reseña de uso único.
+- `ADMIN` accede a revisión, documentos, viajes, reservas y dashboard; `OWNER` a su estado, sus
+  documentos y sus embarcaciones.
+- No existen cuentas de cliente ni dashboard de turista: el turista reserva sin cuenta
+  (`POST /public/reservas`) y entra a la reseña por un enlace con token de uso único.
 
 ## Límites y cabeceras
 
-- `POST /auth/login` y `POST /auth/register/lanchero` (y su alias `register`) aceptan hasta
-  `AUTH_RATE_LIMIT_MAX` intentos por IP cada `AUTH_RATE_LIMIT_WINDOW_SECONDS` segundos (10 por
+- `POST /auth/login`, `POST /auth/register/lanchero` (y su alias `register`) y
+  `POST /public/reservas` aceptan hasta `AUTH_RATE_LIMIT_MAX` intentos por IP cada
+  `AUTH_RATE_LIMIT_WINDOW_SECONDS` segundos (10 por
   minuto por defecto). Al superarlo responden
   `429` con `codigo: "DEMASIADAS_PETICIONES"`. El contador es en memoria: con más de una instancia
   del backend hay que moverlo a un almacén compartido.

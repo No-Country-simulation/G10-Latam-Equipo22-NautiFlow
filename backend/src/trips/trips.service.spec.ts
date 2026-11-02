@@ -16,7 +16,14 @@ function createService(prismaMock: object, scheduleOverride?: Partial<BoatSchedu
 		assertSlotsAvailable: vi.fn().mockResolvedValue(undefined),
 		...scheduleOverride,
 	} as unknown as BoatScheduleService;
-	return { service: new TripsService(prismaMock as unknown as PrismaService, schedule), schedule };
+	const reservas = { anularPorViaje: vi.fn().mockResolvedValue(undefined) } as unknown as {
+		anularPorViaje: ReturnType<typeof vi.fn>;
+	};
+	return {
+		service: new TripsService(prismaMock as unknown as PrismaService, schedule, reservas),
+		schedule,
+		reservas,
+	};
 }
 
 function prismaMock({
@@ -166,6 +173,61 @@ describe('TripsService', () => {
 						embarcacionId: undefined,
 					}),
 				}),
+			);
+		});
+	});
+
+	describe('updateStatus', () => {
+		it('anula la reserva vinculada al cancelar el viaje', async () => {
+			const prisma = prismaMock({
+				trip: { id: 'uuid-viaje', status: TripStatus.ASSIGNED, passengerCount: 4, scheduledAt },
+				updated: { id: 'uuid-viaje', status: TripStatus.CANCELLED, scheduledAt },
+			});
+			const { service, reservas } = createService(prisma);
+
+			const result = await service.updateStatus('uuid-viaje', TripStatus.CANCELLED);
+
+			expect(result.status).toBe(TripStatus.CANCELLED);
+			expect(reservas.anularPorViaje).toHaveBeenCalledWith(prisma, 'uuid-viaje');
+		});
+
+		it('no toca las reservas si el viaje no se cancela', async () => {
+			const prisma = prismaMock({
+				trip: {
+					id: 'uuid-viaje',
+					status: TripStatus.ASSIGNED,
+					passengerCount: 4,
+					scheduledAt,
+					embarcacionId: 'uuid-lancha',
+				},
+				updated: { id: 'uuid-viaje', status: TripStatus.CONFIRMED, scheduledAt },
+			});
+			const { service, reservas } = createService(prisma);
+
+			await service.updateStatus('uuid-viaje', TripStatus.CONFIRMED);
+
+			expect(reservas.anularPorViaje).not.toHaveBeenCalled();
+		});
+
+		it('rechaza una transición no permitida', async () => {
+			const prisma = prismaMock({
+				trip: { id: 'uuid-viaje', status: TripStatus.COMPLETED, passengerCount: 4, scheduledAt },
+			});
+			const { service, reservas } = createService(prisma);
+
+			await expect(service.updateStatus('uuid-viaje', TripStatus.CONFIRMED)).rejects.toBeInstanceOf(
+				BadRequestException,
+			);
+			expect(prisma.trip.update).not.toHaveBeenCalled();
+			expect(reservas.anularPorViaje).not.toHaveBeenCalled();
+		});
+
+		it('rechaza un viaje inexistente', async () => {
+			const prisma = prismaMock({ trip: null });
+			const { service } = createService(prisma);
+
+			await expect(service.updateStatus('uuid-viaje', TripStatus.CANCELLED)).rejects.toBeInstanceOf(
+				NotFoundException,
 			);
 		});
 	});

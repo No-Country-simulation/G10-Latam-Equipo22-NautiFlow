@@ -44,6 +44,8 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | US-07 | Registrar y asignar viaje manualmente | Alta | historia-US-07, backend |
 | US-08 | Completar viaje y habilitar reseña | Alta | historia-US-08, backend |
 | US-15 | Dashboard admin: layout, tablas y navegación | Alta | historia-US-15, frontend |
+| US-17 | Catálogo público de salidas y tramos con filtros | Alta | historia-US-17, backend |
+| US-18 | Reservas: solicitud pública y gestión admin (confirmar/cancelar) | Alta | historia-US-18, backend |
 | TECH-19 | Validar solapamiento de horarios al asignar lancha | Alta | backend |
 | TECH-20 | Paginar listados admin de viajes, solicitudes y documentos | Media | backend, frontend |
 
