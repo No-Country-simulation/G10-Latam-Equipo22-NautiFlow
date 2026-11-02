@@ -89,6 +89,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | GET | `/admin/salidas` | ADMIN | Listar salidas con filtros y paginación |
 | GET | `/admin/salidas/:id` | ADMIN | Detalle de salida con tramos |
 | PATCH | `/admin/salidas/:id` | ADMIN | Actualizar estado o fecha de salida |
+| PATCH | `/admin/salidas/:salidaId/tramos/:tramoId` | ADMIN | Actualizar cupo, precio, fecha o estado de un tramo |
 | GET | `/public/salidas` | Público | Catálogo de salidas disponibles con filtros |
 | GET | `/public/salidas/:id` | Público | Detalle público de salida con tramos y rating |
 | POST | `/admin/trips/:id/review-link` | ADMIN | Generar enlace único de reseña |
@@ -219,7 +220,8 @@ Reglas:
 - `cupo` por defecto igual a la capacidad de la lancha (0 a 100).
 - `precioCentavos` en centavos, mínimo 0.
 - `sinTuristas` marca un tramo de regreso vacío (default `false`).
-- No puede superponerse con otros viajes o salidas de la misma lancha en `TRIP_SLOT_HOURS`.
+- No puede superponerse con otros viajes o salidas de la misma lancha en `TRIP_SLOT_HOURS`. La
+  validación cubre `fechaSalida` y cada `fechaHora` de los tramos.
 
 `GET /api/v1/public/salidas` lista salidas `PROGRAMADA` futuras de lanchas elegibles. Filtros:
 
@@ -236,7 +238,22 @@ Cada item incluye lancha pública, rating de la embarcación, tramos con precio/
 `GET /api/v1/public/salidas/:id` devuelve el detalle con las últimas 5 reseñas de la lancha.
 
 `PATCH /api/v1/admin/salidas/:id` actualiza `estado` (`PROGRAMADA`, `CANCELADA`, `COMPLETADA`) o
-`fechaSalida` (con re-validación de disponibilidad).
+`fechaSalida` (con re-validación de disponibilidad). Al cambiar `fechaSalida`, todos los tramos se
+desplazan por el mismo delta y se re-validan sus fechas.
+
+`PATCH /api/v1/admin/salidas/:salidaId/tramos/:tramoId` actualiza campos de un tramo:
+
+| Campo | Tipo | Descripción |
+| --- | --- | --- |
+| `estado` | `DISPONIBLE`, `RESERVADO`, `CERRADO`, `CANCELADO` | Estado del tramo |
+| `cupo` | entero 0–100 | No puede superar la capacidad de la lancha |
+| `precioCentavos` | entero ≥ 0 | Precio en centavos |
+| `fechaHora` | fecha ISO | Debe ser futura; re-valida disponibilidad |
+| `sinTuristas` | boolean | Marca el tramo como vacío |
+
+Al cambiar `fechaHora`, se re-valida la disponibilidad contra otras salidas/viajes y entre los
+tramos de la misma salida. El tramo IDA no puede quedar anterior a la salida; el VUELTA debe ser
+posterior.
 
 ## Contrato planificado
 

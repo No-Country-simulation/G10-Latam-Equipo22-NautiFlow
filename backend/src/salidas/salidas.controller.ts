@@ -9,6 +9,7 @@ import { CreateSalidaDto } from './create-salida.dto.js';
 import { ListSalidasQueryDto } from './list-salidas-query.dto.js';
 import { SalidasService } from './salidas.service.js';
 import { UpdateSalidaDto } from './update-salida.dto.js';
+import { UpdateTramoDto } from './update-tramo.dto.js';
 
 @ApiTags('salidas')
 @Controller('admin/salidas')
@@ -35,5 +36,14 @@ export class SalidasController {
 	@Patch(':id')
 	update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSalidaDto) {
 		return this.salidasService.update(id, dto);
+	}
+
+	@Patch(':salidaId/tramos/:tramoId')
+	updateTramo(
+		@Param('salidaId', ParseUUIDPipe) salidaId: string,
+		@Param('tramoId', ParseUUIDPipe) tramoId: string,
+		@Body() dto: UpdateTramoDto,
+	) {
+		return this.salidasService.updateTramo(salidaId, tramoId, dto);
 	}
 }
