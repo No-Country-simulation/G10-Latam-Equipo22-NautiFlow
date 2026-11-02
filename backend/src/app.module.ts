@@ -5,10 +5,12 @@ import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { BoatsModule } from './boats/boats.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { EmptyLegsModule } from './empty-legs/empty-legs.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
 import { OwnersModule } from './owners/owners.module.js';
+import { ReservasModule } from './reservas/reservas.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { SalidasModule } from './salidas/salidas.module.js';
 import { TripsModule } from './trips/trips.module.js';
@@ -36,6 +38,8 @@ import { ZonesModule } from './zones/zones.module.js';
     ReviewsModule,
     EmptyLegsModule,
     SalidasModule,
+    ReservasModule,
+    DashboardModule,
     NotificationsModule,
   ],
 })

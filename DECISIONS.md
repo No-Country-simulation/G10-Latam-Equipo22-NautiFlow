@@ -139,6 +139,34 @@ marcadas como **pendientes** requieren acuerdo del equipo.
 - **Responsable:** equipo Full Stack.
 - **Estado:** aprobada.
 
+## D-013 — Ciclo de vida de la reserva y del cupo
+
+- **Fecha:** 2026-11-02
+- **Decisión:** la reserva pasa por `PENDIENTE → CONFIRMADA | RECHAZADA | CANCELADA`, y el cupo se
+  descuenta **solo al confirmar**, nunca al crear la solicitud.
+  - `POST /public/reservas` crea la solicitud sin cuenta y sin tocar el cupo; guarda un snapshot
+    de origen, destino, fecha y precio para que la ficha no cambie si el admin reprograma.
+  - `POST /admin/reservas/:id/confirmar` corre en una transacción: re-valida la franja de la
+    lancha (excluyendo su propia salida/tramo), descuenta el cupo con un `updateMany` condicional,
+    cierra el tramo si llega a 0, crea o reutiliza el cliente, crea el `Trip` `CONFIRMED`
+    vinculado y marca la reserva `CONFIRMADA` con `cupoDescontado`.
+  - Cancelar una reserva confirmada restaura el cupo (y reabre el tramo si estaba `CERRADO`),
+    cancela su viaje y limpia `cupoDescontado`; cancelar un viaje anula la reserva vinculada con
+    las mismas reglas. El flag evita la doble restauración.
+  - Cupo 0 deja el tramo `CERRADO`; el admin lo reabre y puede ajustar el cupo manualmente
+    (`PATCH /admin/salidas/:salidaId/tramos/:tramoId`).
+- **Alternativas:** descontar cupo al crear la reserva (descarta: una solicitud abandonada bloquea
+  inventario); cupo por salida en lugar de por tramo (descarta: ida y vuelta se venden por
+  separado, D-012).
+- **Motivo:** permite que el turista solicite sin fricción, que el admin gestione la disponibilidad
+  y que ninguna carrera de concurrencia deje el cupo en negativo.
+- **Consecuencia:** se agrega `enum EstadoReserva`, el modelo `Reserva` (con `cupoDescontado` y
+  snapshot) y la relación `Trip.reserva`. `TripsService.updateStatus` depende de `ReservasService`
+  para anular la reserva al cancelar. El rate limit de `POST /public/reservas` reutiliza
+  `RateLimitGuard` (no se incorpora `@nestjs/throttler`).
+- **Responsable:** equipo Full Stack.
+- **Estado:** aprobada.
+
 ## Decisiones pendientes
 
 | Tema | Propuesta inicial | Pregunta |

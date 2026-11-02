@@ -81,6 +81,7 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado (legacy) |
 | Salida | embarcación, fecha/hora de salida, estado, admin creador; contiene tramos |
 | Tramo | salida, tipo IDA/VUELTA, origen/destino, fecha/hora, cupo, precio en centavos, `sinTuristas`, estado |
+| Reserva | tramo y salida, contacto del turista (nombre, teléfono, email opcional), pasajeros, mensaje, snapshot de origen/destino/fecha/precio, estado, `cupoDescontado`, viaje vinculado, admin revisor y nota |
 | Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
 
 ## Relaciones previstas
@@ -92,6 +93,10 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa (legacy).
 - Una `Salida` tiene uno o más `Tramo` (ida y vuelta opcional).
 - Un `Trip` puede vincularse opcionalmente a una `Salida` y `Tramo` cuando nace de una reserva.
+- Una `Reserva` apunta a un `Tramo` y a su `Salida`; al confirmarse crea un `Trip` con
+  `tripId` único en la reserva. Un `Tramo` puede tener varias reservas; solo una queda
+  `CONFIRMADA` por el cupo descontado.
+- Un `Trip` cancelado anula su `Reserva` vinculada y restaura el cupo del `Tramo`.
 
 ## Estados
 
@@ -104,6 +109,7 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | Tramo vacío | Disponible · Ofrecido · Asignado · Cerrado (legacy) |
 | Salida | Programada · Cancelada · Completada |
 | Tramo de salida | Disponible · Reservado · Cerrado · Cancelado |
+| Reserva | Pendiente · Confirmada · Rechazada · Cancelada |
 
 ## Reglas de integridad
 
@@ -120,6 +126,11 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
 - El tramo vacío invierte el recorrido del viaje y reutiliza su embarcación; solo se registra
   para viajes `ASSIGNED`/`CONFIRMED`, con regreso posterior a la salida y un tramo activo por viaje.
+- El cupo de un `Tramo` nunca baja de 0: el descuento es un `updateMany` condicional
+  (`estado = DISPONIBLE` y `cupo ≥ cantidad`) dentro de la transacción de confirmación, y el
+  descuento solo ocurre en reservas `CONFIRMADA` (`cupoDescontado = true`).
+- `cupoDescontado` evita restaurar el cupo dos veces; se limpia al cancelar. Un tramo con cupo 0
+  queda `CERRADO` y se reabre manualmente desde el admin.
 
 ## Trabajo con migraciones
 

@@ -78,6 +78,14 @@ enum TipoTramo {
   VUELTA
 }
 
+/// Estado de una solicitud de reserva de un turista sin cuenta.
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  RECHAZADA
+  CANCELADA
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String
@@ -94,6 +102,7 @@ model User {
   reviewedDocuments OwnerDocument[] @relation("DocumentReviewedBy")
   createdTrips Trip[] @relation("TripCreatedBy")
   createdSalidas Salida[] @relation("SalidaCreatedBy")
+  reviewedReservas Reserva[] @relation("ReservaReviewedBy")
 
   @@map("users")
 }
@@ -234,6 +243,7 @@ model Trip {
   reviewToken    ReviewToken?
   review         Review?
   emptyLegs      EmptyLeg[]
+  reserva        Reserva?
 
   @@index([status, scheduledAt])
   @@index([embarcacionId, scheduledAt])
@@ -255,6 +265,7 @@ model Salida {
 
   tramos Tramo[]
   trips  Trip[]
+  reservas Reserva[]
 
   @@index([estado, fechaSalida])
   @@map("salidas")
@@ -277,6 +288,7 @@ model Tramo {
   updatedAt      DateTime     @updatedAt
 
   trips Trip[]
+  reservas Reserva[]
 
   @@index([salidaId, tipo])
   @@index([estado, fechaHora])
@@ -315,14 +327,48 @@ model ReviewToken {
 }
 
 model Review {
-  id            String      @id @default(uuid()) @db.Uuid
-  tripId        String      @unique @db.Uuid
-  trip          Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  id             String      @id @default(uuid()) @db.Uuid
+  tripId         String      @unique @db.Uuid
+  trip           Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
   embarcacionId String?     @db.Uuid
-  embarcacion   Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: SetNull)
+  embarcacion    Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: SetNull)
   rating        Int
   comment       String?
   createdAt     DateTime    @default(now())
 
   @@map("reviews")
+}
+
+/// Solicitud de reserva de un tramo del catálogo, hecha por un turista sin cuenta.
+model Reserva {
+  id                String        @id @default(uuid()) @db.Uuid
+  tramoId           String        @db.Uuid
+  tramo             Tramo         @relation(fields: [tramoId], references: [id], onDelete: Restrict)
+  salidaId          String        @db.Uuid
+  salida            Salida        @relation(fields: [salidaId], references: [id], onDelete: Restrict)
+  nombre            String
+  telefono          String
+  email             String?
+  cantidadPasajeros Int
+  mensaje           String?
+  /// Snapshot del tramo al momento de solicitar.
+  origen            String
+  destino           String
+  fechaHora         DateTime
+  precioCentavos    Int
+  estado            EstadoReserva @default(PENDIENTE)
+  /// true cuando la confirmación descontó cupo del tramo.
+  cupoDescontado    Boolean       @default(false)
+  adminNote         String?
+  reviewedAt        DateTime?
+  reviewedById      String?       @db.Uuid
+  reviewedBy        User?         @relation("ReservaReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  tripId            String?       @unique @db.Uuid
+  trip              Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([estado, createdAt])
+  @@index([tramoId, estado])
+  @@map("reservas")
 }
