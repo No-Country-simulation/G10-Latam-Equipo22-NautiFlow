@@ -14,7 +14,7 @@ const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
 function createService(prismaMock: object, scheduleOverride?: Partial<BoatScheduleService>) {
 	const schedule = {
-		assertSlotAvailable: vi.fn().mockResolvedValue(undefined),
+		assertSlotsAvailable: vi.fn().mockResolvedValue(undefined),
 		...scheduleOverride,
 	} as unknown as BoatScheduleService;
 	return {
@@ -219,14 +219,14 @@ describe('SalidasService', () => {
 		it('rechaza si hay conflicto de horario', async () => {
 			const prisma = prismaMock();
 			const { service, schedule } = createService(prisma, {
-				assertSlotAvailable: vi.fn().mockRejectedValue(
+				assertSlotsAvailable: vi.fn().mockRejectedValue(
 					new ConflictException('La embarcación ya tiene un viaje o salida asignado en esa franja horaria.'),
 				),
 			});
 
 			await expect(service.create(createDto(), 'uuid-admin')).rejects.toBeInstanceOf(ConflictException);
 			expect(prisma.salida.create).not.toHaveBeenCalled();
-			expect(schedule.assertSlotAvailable).toHaveBeenCalledWith('uuid-lancha', futureDate);
+			expect(schedule.assertSlotsAvailable).toHaveBeenCalledWith('uuid-lancha', [futureDate, futureDate]);
 		});
 
 		it('crea la salida con cupo por defecto igual a la capacidad', async () => {
