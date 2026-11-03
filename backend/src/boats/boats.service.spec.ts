@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BoatScheduleService } from './boat-schedule.service.js';
 import { BoatsService } from './boats.service.js';
 
 const userId = 'uuid-usuario';
@@ -26,8 +27,13 @@ function errorPrisma(code: string) {
   });
 }
 
-function createService(prismaMock: object) {
-  return new BoatsService(prismaMock as unknown as PrismaService);
+function createService(prismaMock: object, schedule?: Partial<BoatScheduleService>) {
+  const scheduleService =
+    schedule ?? ({ findBusyBoatIds: vi.fn().mockResolvedValue([]) } as Partial<BoatScheduleService>);
+  return new BoatsService(
+    prismaMock as unknown as PrismaService,
+    scheduleService as unknown as BoatScheduleService,
+  );
 }
 
 function prismaConMocks({
@@ -168,6 +174,45 @@ describe('BoatsService', () => {
 
       const where = findMany.mock.calls[0][0].where;
       expect(where).not.toHaveProperty('OR');
+    });
+
+    it('excluye las lanchas ocupadas en la fecha indicada', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(0);
+      const schedule = { findBusyBoatIds: vi.fn().mockResolvedValue(['uuid-ocupada', 'uuid-otra']) };
+      const service = createService(prismaConMocks({ findMany, count }), schedule);
+
+      await service.search({ page: 1, limit: 20, fechaHora: '2026-11-10T15:00:00.000Z' });
+
+      expect(schedule.findBusyBoatIds).toHaveBeenCalledWith(new Date('2026-11-10T15:00:00.000Z'));
+      const { where } = findMany.mock.calls[0][0];
+      expect(where.id).toEqual({ notIn: ['uuid-ocupada', 'uuid-otra'] });
+      expect(where.estado).toBe(EstadoEmbarcacion.VERIFICADA);
+    });
+
+    it('no agrega filtro de identificador si la franja está libre', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(0);
+      const schedule = { findBusyBoatIds: vi.fn().mockResolvedValue([]) };
+      const service = createService(prismaConMocks({ findMany, count }), schedule);
+
+      await service.search({ page: 1, limit: 20, fechaHora: '2026-11-10T15:00:00.000Z' });
+
+      const { where } = findMany.mock.calls[0][0];
+      expect(where).not.toHaveProperty('id');
+    });
+
+    it('no consulta la disponibilidad cuando no se indica fecha', async () => {
+      const findMany = vi.fn().mockResolvedValue([]);
+      const count = vi.fn().mockResolvedValue(0);
+      const schedule = { findBusyBoatIds: vi.fn().mockResolvedValue(['uuid-ocupada']) };
+      const service = createService(prismaConMocks({ findMany, count }), schedule);
+
+      await service.search({ page: 1, limit: 20 });
+
+      expect(schedule.findBusyBoatIds).not.toHaveBeenCalled();
+      const { where } = findMany.mock.calls[0][0];
+      expect(where).not.toHaveProperty('id');
     });
   });
 

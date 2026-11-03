@@ -81,4 +81,37 @@ export class BoatScheduleService {
       }
     }
   }
+
+  async findBusyBoatIds(date: Date): Promise<string[]> {
+    const hours = this.config.get<number>('TRIP_SLOT_HOURS') ?? 2;
+    const margin = hours * 60 * 60 * 1000;
+    const from = new Date(date.getTime() - margin);
+    const to = new Date(date.getTime() + margin);
+
+    const [viajes, salidas] = await Promise.all([
+      this.prisma.trip.findMany({
+        where: {
+          embarcacionId: { not: null },
+          status: { in: TRIP_ESTADOS_ACTIVOS },
+          scheduledAt: { gte: from, lte: to },
+        },
+        distinct: ['embarcacionId'],
+        select: { embarcacionId: true },
+      }),
+      this.prisma.salida.findMany({
+        where: {
+          estado: { in: SALIDA_ESTADOS_ACTIVOS },
+          OR: [
+            { fechaSalida: { gte: from, lte: to } },
+            { tramos: { some: { fechaHora: { gte: from, lte: to } } } },
+          ],
+        },
+        distinct: ['embarcacionId'],
+        select: { embarcacionId: true },
+      }),
+    ]);
+
+    const ids = [...viajes, ...salidas].map((row) => row.embarcacionId).filter((id): id is string => Boolean(id));
+    return [...new Set(ids)];
+  }
 }

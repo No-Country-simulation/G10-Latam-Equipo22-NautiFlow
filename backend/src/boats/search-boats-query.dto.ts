@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { EstadoEmbarcacion } from '../generated/prisma/client.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
@@ -30,4 +30,13 @@ export class SearchBoatsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-11-10T15:00:00.000Z',
+    description:
+      'Fecha y hora ISO para excluir lanchas con viaje o salida activa en esa franja; si es solo fecha se usa 00:00 UTC',
+  })
+  @IsOptional()
+  @IsISO8601()
+  fechaHora?: string;
 }
