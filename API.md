@@ -5,6 +5,7 @@ REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:30
 ## Convenciones
 
 - DTOs de entrada y salida: nunca se exponen entidades Prisma.
+- Swagger (`/api/docs`) documenta por endpoint la autenticación, los DTOs de entrada y la forma exacta de la respuesta (incluida la paginación).
 - Validación en backend con `class-validator`; el frontend valida como refuerzo.
 - Guards por rol (`ADMIN`, `OWNER`) y por recurso.
 - Códigos: `200/201`, `400`, `401`, `403`, `404`, `409`, `422`.
