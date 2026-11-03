@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { OwnerStatus, DocumentStatus, DocumentType, EstadoEmbarcacion } from '../generated/prisma/client.js';
+import { OwnerStatus, DocumentStatus, DocumentType, EstadoEmbarcacion, Prisma } from '../generated/prisma/client.js';
+import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { ListSolicitudesQueryDto } from './list-solicitudes-query.dto.js';
 import type { UpdateProfileDto } from './update-profile.dto.js';
 
 @Injectable()
@@ -89,31 +91,40 @@ export class OwnersService {
 		return this.getMyRequest(userId);
 	}
 
-	listRequests(status?: OwnerStatus) {
-		return this.prisma.owner.findMany({
-			where: status ? { status } : undefined,
+	async listRequests(query: ListSolicitudesQueryDto) {
+		const where: Prisma.OwnerWhereInput = query.status ? { status: query.status } : {};
+
+		const [data, total] = await Promise.all([
+			this.prisma.owner.findMany({
+				where,
 				orderBy: { createdAt: 'asc' },
-			select: {
-				id: true,
-				status: true,
-				reviewNote: true,
-				createdAt: true,
-				user: { select: { id: true, name: true, email: true, status: true } },
-				embarcaciones: {
-					select: {
-						id: true,
-						nombre: true,
-						matricula: true,
-						capacidad: true,
-						estado: true,
-						zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: {
+					id: true,
+					status: true,
+					reviewNote: true,
+					createdAt: true,
+					user: { select: { id: true, name: true, email: true, status: true } },
+					embarcaciones: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							capacidad: true,
+							estado: true,
+							zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+						},
+					},
+					documents: {
+						select: { id: true, type: true, status: true, filename: true, reviewNote: true, createdAt: true },
 					},
 				},
-				documents: {
-					select: { id: true, type: true, status: true, filename: true, reviewNote: true, createdAt: true },
-				},
-			},
-		});
+			}),
+			this.prisma.owner.count({ where }),
+		]);
+
+		return buildPaginated(data, total, query.page, query.limit);
 	}
 
 	async reviewRequest(id: string, decision: 'APPROVED' | 'REJECTED', note: string, reviewerId: string) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role, TripStatus } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
 import { TripsService } from './trips.service.js';
 import { CreateTripDto } from './create-trip.dto.js';
+import { ListTripsQueryDto } from './list-trips-query.dto.js';
 import { UpdateTripStatusDto } from './update-trip-status.dto.js';
 import { AssignBoatDto } from './assign-boat.dto.js';
 
@@ -18,8 +19,8 @@ export class TripsController {
 	constructor(private readonly tripsService: TripsService) {}
 
 	@Get()
-	list() {
-		return this.tripsService.list();
+	list(@Query() query: ListTripsQueryDto) {
+		return this.tripsService.list(query);
 	}
 
 	@Post()

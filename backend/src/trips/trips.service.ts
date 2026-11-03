@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { EstadoEmbarcacion, OwnerStatus, TripStatus } from '../generated/prisma/client.js';
+import { EstadoEmbarcacion, OwnerStatus, Prisma, TripStatus } from '../generated/prisma/client.js';
+import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from '../boats/boat-schedule.service.js';
 import { ReservasService } from '../reservas/reservas.service.js';
 import type { CreateTripDto } from './create-trip.dto.js';
+import type { ListTripsQueryDto } from './list-trips-query.dto.js';
 
 @Injectable()
 export class TripsService {
@@ -14,20 +16,53 @@ export class TripsService {
 		private readonly reservas: ReservasService,
 	) {}
 
-	list() {
-		return this.prisma.trip.findMany({
-			orderBy: { scheduledAt: 'desc' },
-			select: {
-				id: true,
-				scheduledAt: true,
-				passengerCount: true,
-				origin: true,
-				destination: true,
-				status: true,
-				cliente: { select: { nombre: true, telefono: true, email: true } },
-				embarcacion: { select: { id: true, nombre: true, matricula: true } },
-			},
-		});
+	async list(query: ListTripsQueryDto) {
+		const where: Prisma.TripWhereInput = {};
+		if (query.status) where.status = query.status;
+
+		const q = query.q?.trim();
+		if (q) {
+			where.OR = [
+				{
+					cliente: {
+						OR: [
+							{ nombre: { contains: q, mode: 'insensitive' } },
+							{ telefono: { contains: q, mode: 'insensitive' } },
+							{ email: { contains: q, mode: 'insensitive' } },
+						],
+					},
+				},
+				{ origin: { contains: q, mode: 'insensitive' } },
+				{ destination: { contains: q, mode: 'insensitive' } },
+			];
+		}
+
+		const scheduledAt: Prisma.DateTimeFilter = {};
+		if (query.fechaDesde) scheduledAt.gte = new Date(query.fechaDesde);
+		if (query.fechaHasta) scheduledAt.lte = finDeDia(query.fechaHasta);
+		if (query.fechaDesde || query.fechaHasta) where.scheduledAt = scheduledAt;
+
+		const [data, total] = await Promise.all([
+			this.prisma.trip.findMany({
+				where,
+				orderBy: { scheduledAt: 'desc' },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: {
+					id: true,
+					scheduledAt: true,
+					passengerCount: true,
+					origin: true,
+					destination: true,
+					status: true,
+					cliente: { select: { nombre: true, telefono: true, email: true } },
+					embarcacion: { select: { id: true, nombre: true, matricula: true } },
+				},
+			}),
+			this.prisma.trip.count({ where }),
+		]);
+
+		return buildPaginated(data, total, query.page, query.limit);
 	}
 
 	async create(dto: CreateTripDto, adminId: string) {
@@ -139,4 +174,10 @@ export class TripsService {
 		if (boat.capacidad < passengers) throw new BadRequestException('La embarcación no tiene capacidad suficiente.');
 		return boat;
 	}
+}
+
+function finDeDia(value: string): Date {
+	const date = new Date(value);
+	if (value.includes('T')) return date;
+	return new Date(date.getTime() + 24 * 60 * 60 * 1000 - 1);
 }
