@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OwnerStatus, DocumentStatus, DocumentType, EstadoEmbarcacion } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { UpdateProfileDto } from './update-profile.dto.js';
 
 @Injectable()
 export class OwnersService {
@@ -14,8 +15,11 @@ export class OwnersService {
 				id: true,
 				status: true,
 				reviewNote: true,
+				phone: true,
+				whatsappPhone: true,
 				createdAt: true,
 				reviewedAt: true,
+				user: { select: { id: true, name: true, email: true } },
 				embarcaciones: {
 					select: {
 						id: true,
@@ -31,6 +35,29 @@ export class OwnersService {
 				},
 			},
 		});
+	}
+
+	async updateProfile(userId: string, dto: UpdateProfileDto) {
+		const owner = await this.prisma.owner.findUnique({
+			where: { userId },
+			select: { id: true },
+		});
+		if (!owner) throw new NotFoundException('No se encontró la ficha del propietario.');
+
+		const ownerData: { phone?: string; whatsappPhone?: string | null } = {};
+		if (dto.phone !== undefined) ownerData.phone = dto.phone.trim();
+		if (dto.whatsappPhone !== undefined) ownerData.whatsappPhone = dto.whatsappPhone?.trim() ?? null;
+
+		await this.prisma.$transaction(async (transaction) => {
+			if (dto.name !== undefined) {
+				await transaction.user.update({ where: { id: userId }, data: { name: dto.name.trim() } });
+			}
+			if (ownerData.phone !== undefined || ownerData.whatsappPhone !== undefined) {
+				await transaction.owner.update({ where: { id: owner.id }, data: ownerData });
+			}
+		});
+
+		return this.getMyRequest(userId);
 	}
 
 	async reopenMyRequest(userId: string) {

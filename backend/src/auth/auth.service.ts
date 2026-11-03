@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { DocumentType, Role } from '../generated/prisma/client.js';
 import type { RegisterOwnerDto } from './register-owner.dto.js';
+import type { ChangePasswordDto } from './change-password.dto.js';
 import type { OwnerRegistrationFiles, UploadedDocumentFile } from '../documents/file.types.js';
 import { safeFilename, validateUploadedFile } from '../documents/file-validation.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -136,6 +137,26 @@ export class AuthService {
 		}
 
 		return this.createSession(this.toAuthenticatedUser(user));
+	}
+
+	async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+		const user = await this.prisma.user.findUnique({
+			where: { id: userId },
+			select: { id: true, passwordHash: true },
+		});
+		if (!user) throw new NotFoundException('No se encontró la cuenta.');
+
+		if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+			throw new BadRequestException('La contraseña actual es incorrecta.');
+		}
+		if (await bcrypt.compare(dto.newPassword, user.passwordHash)) {
+			throw new BadRequestException('La nueva contraseña debe ser distinta de la actual.');
+		}
+
+		await this.prisma.user.update({
+			where: { id: userId },
+			data: { passwordHash: await bcrypt.hash(dto.newPassword, 12) },
+		});
 	}
 
 	async authenticateToken(token: string): Promise<AuthenticatedUser | null> {

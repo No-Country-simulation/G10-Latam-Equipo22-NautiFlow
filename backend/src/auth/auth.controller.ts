@@ -4,6 +4,7 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
+	Patch,
 	Post,
 	Req,
 	Res,
@@ -17,6 +18,7 @@ import type { Response } from 'express';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard.js';
 import type { OwnerRegistrationFiles } from '../documents/file.types.js';
 import { AuthService } from './auth.service.js';
+import { ChangePasswordDto } from './change-password.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { LoginDto } from './login.dto.js';
 import { RegisterOwnerDto } from './register-owner.dto.js';
@@ -70,6 +72,13 @@ export class AuthController {
 	@UseGuards(JwtAuthGuard)
 	me(@Req() request: AuthenticatedRequest) {
 		return { user: request.user };
+	}
+
+	@Patch('me/password')
+	@UseGuards(JwtAuthGuard, RateLimitGuard)
+	async changePassword(@Req() request: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
+		await this.authService.changePassword(request.user!.id, dto);
+		return { message: 'Contraseña actualizada.' };
 	}
 
 	private setSessionCookie(response: Response, token: string, maxAge: number) {

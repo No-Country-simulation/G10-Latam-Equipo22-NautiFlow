@@ -80,3 +80,92 @@ describe('OwnersService - reapertura de solicitud', () => {
     await expect(service.reopenMyRequest('user-id')).rejects.toBeInstanceOf(NotFoundException);
   });
 });
+
+function createProfileService(owner: { id: string } | null) {
+  const prisma = {
+    owner: {
+      findUnique: vi.fn().mockResolvedValue(owner),
+      update: vi.fn().mockResolvedValue({}),
+      findUniqueOrThrow: vi.fn().mockResolvedValue({
+        id: 'owner-id',
+        status: OwnerStatus.PENDING,
+        phone: '+541112345678',
+        whatsappPhone: null,
+        user: { id: 'user-id', name: 'Ana Navegante', email: 'ana@example.com' },
+      }),
+    },
+    user: { update: vi.fn().mockResolvedValue({}) },
+    $transaction: vi.fn(),
+  };
+  prisma.$transaction.mockImplementation(async (callback: (tx: typeof prisma) => unknown) =>
+    callback(prisma),
+  );
+  return { service: new OwnersService(prisma as unknown as PrismaService), prisma };
+}
+
+describe('OwnersService - perfil propio', () => {
+  it('devuelve el usuario y los teléfonos junto a la solicitud', async () => {
+    const { service, prisma } = createProfileService({ id: 'owner-id' });
+
+    await service.getMyRequest('user-id');
+
+    const select = prisma.owner.findUniqueOrThrow.mock.calls[0][0].select;
+    expect(select).toMatchObject({
+      phone: true,
+      whatsappPhone: true,
+      user: { select: { id: true, name: true, email: true } },
+    });
+  });
+
+  it('actualiza nombre, teléfono y whatsapp en una transacción', async () => {
+    const { service, prisma } = createProfileService({ id: 'owner-id' });
+
+    const result = await service.updateProfile('user-id', {
+      name: ' Ana Navegante ',
+      phone: ' +541112345678 ',
+      whatsappPhone: '+541198765432',
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-id' },
+      data: { name: 'Ana Navegante' },
+    });
+    expect(prisma.owner.update).toHaveBeenCalledWith({
+      where: { id: 'owner-id' },
+      data: { phone: '+541112345678', whatsappPhone: '+541198765432' },
+    });
+    expect(result).toMatchObject({ id: 'owner-id' });
+  });
+
+  it('solo toca los campos enviados', async () => {
+    const { service, prisma } = createProfileService({ id: 'owner-id' });
+
+    await service.updateProfile('user-id', { phone: '+541187654321' });
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.owner.update).toHaveBeenCalledWith({
+      where: { id: 'owner-id' },
+      data: { phone: '+541187654321' },
+    });
+  });
+
+  it('limpia el whatsapp cuando se envía vacío o null', async () => {
+    const { service, prisma } = createProfileService({ id: 'owner-id' });
+
+    await service.updateProfile('user-id', { whatsappPhone: null });
+
+    expect(prisma.owner.update).toHaveBeenCalledWith({
+      where: { id: 'owner-id' },
+      data: { whatsappPhone: null },
+    });
+  });
+
+  it('lanza 404 si el usuario no tiene ficha de propietario', async () => {
+    const { service, prisma } = createProfileService(null);
+
+    await expect(service.updateProfile('user-id', { name: 'Ana' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
