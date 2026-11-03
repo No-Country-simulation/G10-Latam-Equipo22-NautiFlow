@@ -7,8 +7,9 @@ function rolesDe(metodo: string) {
 }
 
 describe('OwnersController', () => {
-  it('restringe la solicitud y su reapertura al rol OWNER', () => {
+  it('restringe la solicitud, su reapertura y el perfil al rol OWNER', () => {
     expect(rolesDe('getMyRequest')).toEqual([Role.OWNER]);
     expect(rolesDe('reopenMyRequest')).toEqual([Role.OWNER]);
+    expect(rolesDe('updateProfile')).toEqual([Role.OWNER]);
   });
 });

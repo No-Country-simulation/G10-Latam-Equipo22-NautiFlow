@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -6,6 +6,7 @@ import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
 import { OwnersService } from './owners.service.js';
+import { UpdateProfileDto } from './update-profile.dto.js';
 
 @ApiTags('owners')
 @Controller('owners')
@@ -25,5 +26,12 @@ export class OwnersController {
 	@Roles(Role.OWNER)
 	reopenMyRequest(@Req() request: AuthenticatedRequest) {
 		return this.ownersService.reopenMyRequest(request.user!.id);
+	}
+
+	@Patch('me')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.OWNER)
+	updateProfile(@Req() request: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
+		return this.ownersService.updateProfile(request.user!.id, dto);
 	}
 }

@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import bcrypt from 'bcryptjs';
 import { Role } from '../generated/prisma/client.js';
@@ -25,6 +25,7 @@ const activeClient = {
 
 function createService() {
   const findUnique = vi.fn();
+  const updateUser = vi.fn();
   const createUser = vi.fn();
   const createBoat = vi.fn();
   const createDocuments = vi.fn();
@@ -35,7 +36,7 @@ function createService() {
     ownerDocument: { createMany: createDocuments },
   };
   const prisma = {
-    user: { findUnique },
+    user: { findUnique, update: updateUser },
     zona: { findMany: findZones },
     $transaction: vi.fn(async (callback: (tx: typeof transaction) => unknown) => callback(transaction)),
   } as unknown as PrismaService;
@@ -46,6 +47,7 @@ function createService() {
   return {
     service: new AuthService(prisma, config),
     findUnique,
+    updateUser,
     createUser,
     createBoat,
     createDocuments,
@@ -159,5 +161,60 @@ describe('AuthService', () => {
 
     findUnique.mockResolvedValue(activeClient as never);
     await expect(service.authenticateToken(session.token)).resolves.toBeNull();
+  });
+});
+
+describe('AuthService - cambio de contraseña', () => {
+  it('reemplaza el hash cuando la contraseña actual es correcta', async () => {
+    const { service, findUnique, updateUser } = createService();
+    findUnique.mockResolvedValue({
+      ...activeOwner,
+      passwordHash: await bcrypt.hash('clave-actual-123', 4),
+    } as never);
+
+    await service.changePassword('user-id', {
+      currentPassword: 'clave-actual-123',
+      newPassword: 'clave-nueva-456',
+    });
+
+    expect(updateUser).toHaveBeenCalledTimes(1);
+    const nuevoHash = updateUser.mock.calls[0][0].data.passwordHash;
+    expect(nuevoHash).not.toBe('clave-nueva-456');
+    await expect(bcrypt.compare('clave-nueva-456', nuevoHash)).resolves.toBe(true);
+  });
+
+  it('rechaza una contraseña actual incorrecta sin actualizar nada', async () => {
+    const { service, findUnique, updateUser } = createService();
+    findUnique.mockResolvedValue({
+      ...activeOwner,
+      passwordHash: await bcrypt.hash('clave-actual-123', 4),
+    } as never);
+
+    await expect(
+      service.changePassword('user-id', { currentPassword: 'otra-clave-999', newPassword: 'clave-nueva-456' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('rechaza repetir la contraseña actual como nueva', async () => {
+    const { service, findUnique, updateUser } = createService();
+    findUnique.mockResolvedValue({
+      ...activeOwner,
+      passwordHash: await bcrypt.hash('clave-actual-123', 4),
+    } as never);
+
+    await expect(
+      service.changePassword('user-id', { currentPassword: 'clave-actual-123', newPassword: 'clave-actual-123' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('lanza 404 si la cuenta ya no existe', async () => {
+    const { service, findUnique } = createService();
+    findUnique.mockResolvedValue(null as never);
+
+    await expect(
+      service.changePassword('user-id', { currentPassword: 'clave-actual-123', newPassword: 'clave-nueva-456' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

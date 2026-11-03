@@ -59,7 +59,9 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/auth/login` | Público | Login y emisión de JWT en cookie HttpOnly |
 | POST | `/auth/logout` | Público | Expirar la cookie de sesión |
 | GET | `/auth/me` | Autenticado | Usuario actual de la sesión |
-| GET | `/owners/me/solicitud` | OWNER | Perfil, embarcaciones y documentos propios |
+| PATCH | `/auth/me/password` | Autenticado | Cambiar la contraseña con la actual verificada |
+| GET | `/owners/me/solicitud` | OWNER | Usuario, teléfonos, embarcaciones y documentos propios |
+| PATCH | `/owners/me` | OWNER | Actualizar nombre, teléfono o WhatsApp propios |
 | POST | `/owners/me/documents` | OWNER | Reenviar documentación y volver la solicitud a pendiente |
 | POST | `/owners/me/solicitud/reabrir` | OWNER | Reabrir una solicitud rechazada |
 | GET | `/zones` | Público | Zonas de cobertura activas |
@@ -104,6 +106,11 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/admin/reservas/:id/confirmar` | ADMIN | Confirmar reserva, descontar cupo y crear viaje |
 | PATCH | `/admin/reservas/:id/estado` | ADMIN | Rechazar o cancelar reserva (restaura cupo) |
 | GET | `/admin/dashboard/resumen` | ADMIN | Contadores del panel administrativo |
+
+> **Nombres del plan técnico alineados a la implementación:** `/boats/mine` (el plan decía
+> `/boats/me`), `POST /owners/me/documents` (el plan decía `POST /boats/:id/documents`) y
+> `GET /boats` con rol ADMIN (el plan decía `GET /admin/boats/search`). No hay alias: se
+> documentan las rutas reales que ya consume el front.
 
 ### `GET /api/v1/health`
 
@@ -326,11 +333,11 @@ con las mismas reglas de restauración.
 }
 ```
 
-## Contrato planificado
+## Rutas planificadas no implementadas
 
 | Módulo | Método y ruta | Rol | Uso |
 | --- | --- | --- | --- |
-| Notifications | `GET /notifications` | Autenticado | Consultar notificaciones |
+| Notifications | `GET /notifications` | Autenticado | Consultar notificaciones (módulo aún sin implementar) |
 
 El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, `SameSite=Lax`, con
 `Path=/api/v1` y expiración configurada por `JWT_EXPIRES_IN`; en producción también lleva `Secure`.
@@ -360,6 +367,24 @@ a `PENDIENTE`.
 `POST /api/v1/owners/me/solicitud/reabrir` vuelve a `PENDING` una solicitud rechazada sin subir
 archivos (por ejemplo, cuando solo hay que corregir datos de la lancha). Responde `409` si la
 solicitud no está `REJECTED`.
+
+## Perfil y contraseña del lanchero
+
+`GET /api/v1/owners/me/solicitud` incluye `user` (`id`, `name`, `email`), `phone` y
+`whatsappPhone` además del estado de la solicitud, sus embarcaciones y sus documentos.
+
+`PATCH /api/v1/owners/me` recibe JSON con campos opcionales `name` (2 a 100), `phone` (8 a 30) y
+`whatsappPhone` (opcional; enviar vacío o `null` lo limpia). Actualiza el nombre en la cuenta y
+los teléfonos en la ficha del propietario en una transacción, y devuelve la solicitud
+actualizada. No se puede cambiar `email` porque es el identificador de login. Responde `404` si
+el usuario no tiene ficha de propietario.
+
+`PATCH /api/v1/owners/me` es solo para `OWNER` y `PATCH /api/v1/auth/me/password` recibe
+`{ "currentPassword": "...", "newPassword": "..." }` con `newPassword` de 10 a 128 caracteres.
+Verifica la contraseña actual con `bcrypt`, exige que la nueva sea distinta y reemplaza el hash;
+responde `400` si la actual es incorrecta o la nueva es igual a la anterior. Comparte el rate
+limit de login (`AUTH_RATE_LIMIT_MAX` intentos por IP). El JWT es stateless: al cambiar la
+contraseña las sesiones ya emitidas siguen válidas hasta vencer.
 
 ## Contratos de registro y operación
 
