@@ -135,6 +135,7 @@ Por defecto solo devuelve embarcaciones en estado `VERIFICADA`.
 | `capacidadMin` | entero ≥ 1 | Capacidad mínima de pasajeros |
 | `estado` | `PENDIENTE`, `VERIFICADA`, `RECHAZADA`, `INACTIVA` | Default `VERIFICADA` |
 | `q` | texto | Busca en nombre y matrícula sin distinguir mayúsculas |
+| `fechaHora` | fecha ISO | Excluye lanchas con viaje `PENDING`/`ASSIGNED`/`CONFIRMED` o salida `PROGRAMADA` en esa franja (± `TRIP_SLOT_HOURS`); si es solo fecha se usa 00:00 UTC |
 | `page` / `limit` | entero | `page` desde 1; `limit` de 1 a 100 (default 20) |
 
 ```json

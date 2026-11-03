@@ -135,4 +135,75 @@ describe('BoatScheduleService', () => {
 			}),
 		);
 	});
+
+	it('devuelve las lanchas con viajes o salidas activos en la franja, sin duplicados', async () => {
+		const prisma = {
+			trip: {
+				findMany: vi.fn().mockResolvedValue([
+					{ embarcacionId: 'uuid-lancha-1' },
+					{ embarcacionId: null },
+				]),
+			},
+			salida: {
+				findMany: vi.fn().mockResolvedValue([
+					{ embarcacionId: 'uuid-lancha-2' },
+					{ embarcacionId: 'uuid-lancha-1' },
+				]),
+			},
+		};
+		const service = createService(prisma);
+
+		const ids = await service.findBusyBoatIds(scheduledAt);
+
+		expect(ids).toEqual(['uuid-lancha-1', 'uuid-lancha-2']);
+		expect(prisma.trip.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				distinct: ['embarcacionId'],
+				where: expect.objectContaining({
+					embarcacionId: { not: null },
+					status: { in: [TripStatus.PENDING, TripStatus.ASSIGNED, TripStatus.CONFIRMED] },
+					scheduledAt: {
+						gte: new Date(scheduledAt.getTime() - 2 * 60 * 60 * 1000),
+						lte: new Date(scheduledAt.getTime() + 2 * 60 * 60 * 1000),
+					},
+				}),
+			}),
+		);
+		expect(prisma.salida.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				distinct: ['embarcacionId'],
+				where: expect.objectContaining({
+					estado: { in: [EstadoSalida.PROGRAMADA] },
+					OR: [
+						{
+							fechaSalida: {
+								gte: new Date(scheduledAt.getTime() - 2 * 60 * 60 * 1000),
+								lte: new Date(scheduledAt.getTime() + 2 * 60 * 60 * 1000),
+							},
+						},
+						{
+							tramos: {
+								some: {
+									fechaHora: {
+										gte: new Date(scheduledAt.getTime() - 2 * 60 * 60 * 1000),
+										lte: new Date(scheduledAt.getTime() + 2 * 60 * 60 * 1000),
+									},
+								},
+							},
+						},
+					],
+				}),
+			}),
+		);
+	});
+
+	it('devuelve una lista vacía cuando la franja está libre', async () => {
+		const prisma = {
+			trip: { findMany: vi.fn().mockResolvedValue([]) },
+			salida: { findMany: vi.fn().mockResolvedValue([]) },
+		};
+		const service = createService(prisma);
+
+		await expect(service.findBusyBoatIds(scheduledAt)).resolves.toEqual([]);
+	});
 });

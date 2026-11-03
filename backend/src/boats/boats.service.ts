@@ -2,13 +2,17 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BoatScheduleService } from './boat-schedule.service.js';
 import { CreateBoatDto } from './create-boat.dto.js';
 import { SearchBoatsQueryDto } from './search-boats-query.dto.js';
 import { UpdateBoatDto } from './update-boat.dto.js';
 
 @Injectable()
 export class BoatsService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly schedule: BoatScheduleService,
+	) {}
 
 	listApproved() {
 		return this.prisma.embarcacion.findMany({
@@ -38,6 +42,12 @@ export class BoatsService {
 				{ nombre: { contains: q, mode: 'insensitive' } },
 				{ matricula: { contains: q, mode: 'insensitive' } },
 			];
+		}
+		if (query.fechaHora) {
+			const ocupadas = await this.schedule.findBusyBoatIds(new Date(query.fechaHora));
+			if (ocupadas.length) {
+				where.id = { notIn: ocupadas };
+			}
 		}
 
 		const [data, total] = await Promise.all([
