@@ -10,35 +10,50 @@ import {
 	DocumentType,
 	EstadoEmbarcacion,
 	OwnerStatus,
+	Prisma,
 	Role,
 } from '../generated/prisma/client.js';
+import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthenticatedUser } from '../auth/types.js';
 import { safeFilename, validateUploadedFile } from './file-validation.js';
 import type { OwnerRegistrationFiles, UploadedDocumentFile } from './file.types.js';
+import type { ListDocumentsQueryDto } from './list-documents-query.dto.js';
 
 @Injectable()
 export class DocumentsService {
 	constructor(private readonly prisma: PrismaService) {}
 
-	listPending() {
-		return this.prisma.ownerDocument.findMany({
-			where: { status: DocumentStatus.PENDING },
-			orderBy: { createdAt: 'asc' },
-			select: {
-				id: true,
-				ownerId: true,
-				boatId: true,
-				type: true,
-				status: true,
-				filename: true,
-				mimeType: true,
-				size: true,
-				createdAt: true,
-				owner: { select: { user: { select: { name: true, email: true } } } },
-				boat: { select: { nombre: true, matricula: true } },
-			},
-		});
+	async list(query: ListDocumentsQueryDto) {
+		const where: Prisma.OwnerDocumentWhereInput = {
+			status: query.status ?? DocumentStatus.PENDING,
+			...(query.type ? { type: query.type } : {}),
+		};
+
+		const [data, total] = await Promise.all([
+			this.prisma.ownerDocument.findMany({
+				where,
+				orderBy: { createdAt: 'asc' },
+				skip: (query.page - 1) * query.limit,
+				take: query.limit,
+				select: {
+					id: true,
+					ownerId: true,
+					boatId: true,
+					type: true,
+					status: true,
+					filename: true,
+					mimeType: true,
+					size: true,
+					createdAt: true,
+					owner: { select: { user: { select: { name: true, email: true } } } },
+					boat: { select: { nombre: true, matricula: true } },
+				},
+			}),
+			this.prisma.ownerDocument.count({ where }),
+		]);
+
+		return buildPaginated(data, total, query.page, query.limit);
 	}
 
 	async review(id: string, decision: 'APPROVED' | 'REJECTED', note: string, reviewerId: string) {

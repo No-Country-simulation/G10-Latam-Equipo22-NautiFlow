@@ -69,10 +69,10 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/zones` | ADMIN | Crear zona de cobertura |
 | PATCH | `/zones/:id` | ADMIN | Editar zona de cobertura |
 | DELETE | `/zones/:id` | ADMIN | Desactivar zona de cobertura |
-| GET | `/admin/solicitudes?status=PENDING` | ADMIN | Bandeja de solicitudes |
+| GET | `/admin/solicitudes?status=PENDING` | ADMIN | Bandeja de solicitudes paginada |
 | PATCH | `/admin/solicitudes/:id/aprobar` | ADMIN | Aprobar perfil y embarcaciones tras revisar documentos |
 | PATCH | `/admin/solicitudes/:id/rechazar` | ADMIN | Rechazar solicitud con nota |
-| GET | `/admin/documents` | ADMIN | Listar documentos pendientes sin sus bytes |
+| GET | `/admin/documents` | ADMIN | Listar documentos paginados (default pendientes) sin sus bytes |
 | PATCH | `/admin/documents/:id/review` | ADMIN | Aprobar o rechazar un documento |
 | GET | `/documents/:id/file` | Propietario o ADMIN | Descargar documento privado |
 | GET | `/boats` | ADMIN | Buscar embarcaciones elegibles con filtros y paginación |
@@ -82,7 +82,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | POST | `/boats` | OWNER | Alta de embarcación propia |
 | PATCH | `/boats/:id` | OWNER | Editar embarcación propia y su cobertura |
 | POST | `/admin/trips` | ADMIN | Registrar solicitud de viaje |
-| GET | `/admin/trips` | ADMIN | Listar viajes y clientes |
+| GET | `/admin/trips` | ADMIN | Listar viajes paginados con filtros de estado, texto y fechas |
 | PATCH | `/admin/trips/:id/assign` | ADMIN | Asignar embarcación |
 | PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
 | POST | `/admin/empty-legs` | ADMIN | Registrar tramo vacío de regreso |
@@ -267,6 +267,27 @@ desplazan por el mismo delta y se re-validan sus fechas.
 Al cambiar `fechaHora`, se re-valida la disponibilidad contra otras salidas/viajes y entre los
 tramos de la misma salida. El tramo IDA no puede quedar anterior a la salida; el VUELTA debe ser
 posterior.
+
+## Listados de viajes, solicitudes y documentos
+
+Los tres listados de la bandeja de operación responden el formato paginado
+`{ "data": [...], "meta": { "page", "limit", "total", "totalPages" } }`.
+
+`GET /api/v1/admin/trips` (ADMIN), ordenado por `scheduledAt` descendente:
+
+| Query | Tipo | Descripción |
+| --- | --- | --- |
+| `status` | `PENDING`, `ASSIGNED`, `CONFIRMED`, `COMPLETED`, `CANCELLED` | Estado del viaje |
+| `q` | texto | Cliente (nombre, teléfono o email), origen o destino, sin distinguir mayúsculas |
+| `fechaDesde` / `fechaHasta` | fecha ISO | Rango sobre `scheduledAt`; si es solo fecha se usa el día completo en UTC |
+| `page` / `limit` | entero | Convención general |
+
+`GET /api/v1/admin/solicitudes` (ADMIN), ordenado por `createdAt` ascendente, con `status`
+opcional (`PENDING`, `APPROVED`, `REJECTED`) para filtrar por estado de la solicitud.
+
+`GET /api/v1/admin/documents` (ADMIN), ordenado por `createdAt` ascendente: `status` por defecto
+`PENDING` y `type` opcional (`LICENSE`, `INSURANCE`, `BACKGROUND_CHECK`, `PHOTO`) para recorrer el
+resto de la bandeja.
 
 ## Reservas
 

@@ -53,6 +53,8 @@ function prismaMock({
 		trip: {
 			findUnique: vi.fn().mockResolvedValue(trip),
 			findFirst: vi.fn().mockResolvedValue(null),
+			findMany: vi.fn().mockResolvedValue([]),
+			count: vi.fn().mockResolvedValue(0),
 			create: vi.fn().mockResolvedValue(created),
 			update: vi.fn().mockResolvedValue(updated),
 		},
@@ -229,6 +231,80 @@ describe('TripsService', () => {
 			await expect(service.updateStatus('uuid-viaje', TripStatus.CANCELLED)).rejects.toBeInstanceOf(
 				NotFoundException,
 			);
+		});
+	});
+
+	describe('list', () => {
+		it('pagina los viajes y devuelve data con meta', async () => {
+			const prisma = prismaMock();
+			prisma.trip.findMany.mockResolvedValue([{ id: 'uuid-viaje' }]);
+			prisma.trip.count.mockResolvedValue(7);
+			const { service } = createService(prisma);
+
+			const result = await service.list({ page: 2, limit: 5 });
+
+			expect(prisma.trip.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({ skip: 5, take: 5, orderBy: { scheduledAt: 'desc' } }),
+			);
+			expect(result).toEqual({
+				data: [{ id: 'uuid-viaje' }],
+				meta: { page: 2, limit: 5, total: 7, totalPages: 2 },
+			});
+		});
+
+		it('filtra por estado, texto y rango de fechas', async () => {
+			const prisma = prismaMock();
+			const { service } = createService(prisma);
+
+			await service.list({
+				page: 1,
+				limit: 20,
+				status: TripStatus.PENDING,
+				q: ' delta ',
+				fechaDesde: '2026-11-01',
+				fechaHasta: '2026-11-30',
+			});
+
+			const { where } = prisma.trip.findMany.mock.calls[0][0];
+			expect(where.status).toBe(TripStatus.PENDING);
+			expect(where.OR).toEqual([
+				{
+					cliente: {
+						OR: [
+							{ nombre: { contains: 'delta', mode: 'insensitive' } },
+							{ telefono: { contains: 'delta', mode: 'insensitive' } },
+							{ email: { contains: 'delta', mode: 'insensitive' } },
+						],
+					},
+				},
+				{ origin: { contains: 'delta', mode: 'insensitive' } },
+				{ destination: { contains: 'delta', mode: 'insensitive' } },
+			]);
+			expect(where.scheduledAt).toEqual({
+				gte: new Date('2026-11-01T00:00:00.000Z'),
+				lte: new Date('2026-11-30T23:59:59.999Z'),
+			});
+		});
+
+		it('acepta fecha y hora explícita en fechaHasta sin ajustar al fin del día', async () => {
+			const prisma = prismaMock();
+			const { service } = createService(prisma);
+
+			await service.list({ page: 1, limit: 20, fechaHasta: '2026-11-30T15:30:00.000Z' });
+
+			const { where } = prisma.trip.findMany.mock.calls[0][0];
+			expect(where.scheduledAt).toEqual({ lte: new Date('2026-11-30T15:30:00.000Z') });
+		});
+
+		it('sin filtros no restringe la consulta', async () => {
+			const prisma = prismaMock();
+			const { service } = createService(prisma);
+
+			await service.list({ page: 1, limit: 20 });
+
+			const { where } = prisma.trip.findMany.mock.calls[0][0];
+			expect(where).toEqual({});
+			expect(prisma.trip.count).toHaveBeenCalledWith({ where: {} });
 		});
 	});
 });

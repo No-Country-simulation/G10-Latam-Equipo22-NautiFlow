@@ -169,3 +169,44 @@ describe('OwnersService - perfil propio', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
+
+function createListService(rows: object[], total: number) {
+  const prisma = {
+    owner: {
+      findMany: vi.fn().mockResolvedValue(rows),
+      count: vi.fn().mockResolvedValue(total),
+    },
+  };
+  return { service: new OwnersService(prisma as unknown as PrismaService), prisma };
+}
+
+describe('OwnersService - bandeja de solicitudes', () => {
+  it('pagina el listado y devuelve data con meta', async () => {
+    const { service, prisma } = createListService([{ id: 'owner-id' }], 25);
+
+    const result = await service.listRequests({ page: 2, limit: 10, status: OwnerStatus.PENDING });
+
+    expect(prisma.owner.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: OwnerStatus.PENDING },
+        skip: 10,
+        take: 10,
+        orderBy: { createdAt: 'asc' },
+      }),
+    );
+    expect(result).toEqual({
+      data: [{ id: 'owner-id' }],
+      meta: { page: 2, limit: 10, total: 25, totalPages: 3 },
+    });
+  });
+
+  it('sin estado no restringe la consulta', async () => {
+    const { service, prisma } = createListService([], 0);
+
+    await service.listRequests({ page: 1, limit: 20 });
+
+    const { where } = prisma.owner.findMany.mock.calls[0][0];
+    expect(where).toEqual({});
+    expect(prisma.owner.count).toHaveBeenCalledWith({ where: {} });
+  });
+});

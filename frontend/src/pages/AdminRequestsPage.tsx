@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { PaginationBar } from '../components/PaginationBar';
 import { ApiError, api } from '../services/api';
+import type { PageMeta, Paginated } from '../types/api';
 
 interface RequestRecord {
   id: string;
@@ -29,6 +31,10 @@ const docTypeLabels: Record<string, string> = {
 export function AdminRequestsPage() {
   const [requests, setRequests] = useState<RequestRecord[]>([]);
   const [documents, setDocuments] = useState<PendingDocument[]>([]);
+  const [requestsMeta, setRequestsMeta] = useState<PageMeta | null>(null);
+  const [documentsMeta, setDocumentsMeta] = useState<PageMeta | null>(null);
+  const [requestsPage, setRequestsPage] = useState(1);
+  const [documentsPage, setDocumentsPage] = useState(1);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
@@ -38,11 +44,13 @@ export function AdminRequestsPage() {
     setError('');
     try {
       const [requestData, documentData] = await Promise.all([
-        api.get<RequestRecord[]>('/admin/solicitudes?status=PENDING'),
-        api.get<PendingDocument[]>('/admin/documents'),
+        api.get<Paginated<RequestRecord>>(`/admin/solicitudes?status=PENDING&page=${requestsPage}&limit=20`),
+        api.get<Paginated<PendingDocument>>(`/admin/documents?page=${documentsPage}&limit=20`),
       ]);
-      setRequests(requestData);
-      setDocuments(documentData);
+      setRequests(requestData.data);
+      setRequestsMeta(requestData.meta);
+      setDocuments(documentData.data);
+      setDocumentsMeta(documentData.meta);
     } catch {
       setError('No se pudieron cargar las solicitudes. Verificá tu sesión administrativa.');
     } finally {
@@ -50,7 +58,7 @@ export function AdminRequestsPage() {
     }
   }
 
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => { void reload(); }, [requestsPage, documentsPage]);
 
   async function reviewDocument(documentId: string, decision: 'APPROVED' | 'REJECTED') {
     const note = notes[documentId]?.trim();
@@ -92,8 +100,8 @@ export function AdminRequestsPage() {
       {loading ? <p className="session-loading" role="status">Cargando solicitudes...</p> : (
         <>
           <section className="admin-section">
-            <h2>Documentos pendientes <span className="count-mark">{documents.length}</span></h2>
-            {!documents.length && <p className="empty-state">No hay documentos pendientes de revisión.</p>}
+            <h2>Documentos pendientes <span className="count-mark">{documentsMeta?.total ?? documents.length}</span></h2>
+            {!documents.length && <p className="empty-state">{documentsPage > 1 ? 'No hay documentos en esta página.' : 'No hay documentos pendientes de revisión.'}</p>}
             <div className="admin-list">
               {documents.map((document) => (
                 <article className="admin-record" key={document.id}>
@@ -111,11 +119,12 @@ export function AdminRequestsPage() {
                 </article>
               ))}
             </div>
+            <PaginationBar meta={documentsMeta} onChange={setDocumentsPage} label={(value) => `${value.total} documentos`} />
           </section>
 
           <section className="admin-section">
-            <h2>Perfiles pendientes <span className="count-mark">{requests.length}</span></h2>
-            {!requests.length && <p className="empty-state">No hay perfiles pendientes.</p>}
+            <h2>Perfiles pendientes <span className="count-mark">{requestsMeta?.total ?? requests.length}</span></h2>
+            {!requests.length && <p className="empty-state">{requestsPage > 1 ? 'No hay perfiles en esta página.' : 'No hay perfiles pendientes.'}</p>}
             <div className="admin-list">
               {requests.map((request) => (
                 <article className="admin-record" key={request.id}>
@@ -132,6 +141,7 @@ export function AdminRequestsPage() {
                 </article>
               ))}
             </div>
+            <PaginationBar meta={requestsMeta} onChange={setRequestsPage} label={(value) => `${value.total} perfiles`} />
           </section>
         </>
       )}

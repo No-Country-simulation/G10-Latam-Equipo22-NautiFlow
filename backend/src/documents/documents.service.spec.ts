@@ -143,3 +143,43 @@ describe('DocumentsService - reenvío de documentos', () => {
 		);
 	});
 });
+
+function createListService(rows: object[], total: number) {
+	const prisma = {
+		ownerDocument: {
+			findMany: vi.fn().mockResolvedValue(rows),
+			count: vi.fn().mockResolvedValue(total),
+		},
+	};
+	return { service: new DocumentsService(prisma as unknown as PrismaService), prisma };
+}
+
+describe('DocumentsService - bandeja de documentos', () => {
+	it('pagina los pendientes por defecto y devuelve data con meta', async () => {
+		const { service, prisma } = createListService([{ id: 'doc-id' }], 1);
+
+		const result = await service.list({ page: 1, limit: 20 });
+
+		expect(prisma.ownerDocument.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({ skip: 0, take: 20, orderBy: { createdAt: 'asc' } }),
+		);
+		const { where } = prisma.ownerDocument.findMany.mock.calls[0][0];
+		expect(where).toEqual({ status: DocumentStatus.PENDING });
+		expect(result).toEqual({
+			data: [{ id: 'doc-id' }],
+			meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+		});
+	});
+
+	it('filtra por estado y tipo cuando se indican', async () => {
+		const { service, prisma } = createListService([], 0);
+
+		await service.list({ page: 1, limit: 20, status: DocumentStatus.APPROVED, type: DocumentType.LICENSE });
+
+		const { where } = prisma.ownerDocument.findMany.mock.calls[0][0];
+		expect(where).toEqual({ status: DocumentStatus.APPROVED, type: DocumentType.LICENSE });
+		expect(prisma.ownerDocument.count).toHaveBeenCalledWith({
+			where: { status: DocumentStatus.APPROVED, type: DocumentType.LICENSE },
+		});
+	});
+});
