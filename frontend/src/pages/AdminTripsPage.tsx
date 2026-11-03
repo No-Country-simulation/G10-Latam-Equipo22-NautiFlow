@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { PaginationBar } from '../components/PaginationBar';
 import { ApiError, api } from '../services/api';
+import type { PageMeta, Paginated } from '../types/api';
 
 interface Boat { id: string; nombre: string; matricula: string; capacidad: number }
 interface Trip {
@@ -20,6 +22,8 @@ const statusLabels: Record<Trip['status'], string> = {
 export function AdminTripsPage() {
   const [boats, setBoats] = useState<Boat[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [meta, setMeta] = useState<PageMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,11 +32,12 @@ export function AdminTripsPage() {
   async function reload() {
     setError('');
     try {
-      const [tripData, boatData] = await Promise.all([
-        api.get<Trip[]>('/admin/trips'),
+      const [tripPage, boatData] = await Promise.all([
+        api.get<Paginated<Trip>>(`/admin/trips?page=${page}&limit=20`),
         api.get<Boat[]>('/boats/admin/approved'),
       ]);
-      setTrips(tripData);
+      setTrips(tripPage.data);
+      setMeta(tripPage.meta);
       setBoats(boatData);
     } catch {
       setError('No se pudo cargar la operación. Verificá tu sesión administrativa.');
@@ -41,7 +46,7 @@ export function AdminTripsPage() {
     }
   }
 
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => { void reload(); }, [page]);
 
   async function createTrip(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,20 +118,27 @@ export function AdminTripsPage() {
       </section>
       <section className="admin-section">
         <div className="section-heading"><h2>Servicios</h2><button className="button button-ghost" type="button" onClick={() => void reload()} disabled={loading}>Actualizar</button></div>
-        {loading ? <p className="session-loading" role="status">Cargando viajes...</p> : !trips.length ? <p className="empty-state">Todavía no hay viajes registrados.</p> : (
-          <div className="admin-list">{trips.map((trip) => (
-            <article className="admin-record trip-record" key={trip.id}>
-              <div><div className="admin-record-heading"><strong>{trip.cliente.nombre}</strong><span className={`status-mark status-${trip.status.toLowerCase()}`}>{statusLabels[trip.status]}</span></div>
-                <p>{trip.origin} → {trip.destination} · {new Date(trip.scheduledAt).toLocaleString('es-AR')}</p>
-                <p>{trip.passengerCount} pasajeros · {trip.cliente.telefono}{trip.embarcacion ? ` · ${trip.embarcacion.nombre}` : ''}</p>
-              </div>
-              {trip.status === 'PENDING' && <label>Asignar lancha<select defaultValue="" onChange={(event) => event.target.value && void assign(trip.id, event.target.value)}><option value="">Seleccionar…</option>{boats.filter((boat) => boat.capacidad >= trip.passengerCount).map((boat) => <option value={boat.id} key={boat.id}>{boat.nombre} · {boat.capacidad} pasajeros</option>)}</select></label>}
-              {trip.status === 'ASSIGNED' && <button className="button button-ghost" type="button" onClick={() => void updateStatus(trip.id, 'CONFIRMED')}>Confirmar</button>}
-              {trip.status === 'CONFIRMED' && <button className="button" type="button" onClick={() => void updateStatus(trip.id, 'COMPLETED')}>Marcar completado</button>}
-              {trip.status === 'COMPLETED' && <button className="button button-ghost" type="button" onClick={() => void createReviewLink(trip.id)}>Generar enlace de reseña</button>}
-              {reviewLinks[trip.id] && <label>Enlace para el cliente<input readOnly value={reviewLinks[trip.id]} onFocus={(event) => event.currentTarget.select()} /></label>}
-            </article>
-          ))}</div>
+        {loading ? <p className="session-loading" role="status">Cargando viajes...</p> : (
+          <>
+            {!trips.length ? (
+              <p className="empty-state">{page > 1 ? 'No hay viajes en esta página.' : 'Todavía no hay viajes registrados.'}</p>
+            ) : (
+              <div className="admin-list">{trips.map((trip) => (
+                <article className="admin-record trip-record" key={trip.id}>
+                  <div><div className="admin-record-heading"><strong>{trip.cliente.nombre}</strong><span className={`status-mark status-${trip.status.toLowerCase()}`}>{statusLabels[trip.status]}</span></div>
+                    <p>{trip.origin} → {trip.destination} · {new Date(trip.scheduledAt).toLocaleString('es-AR')}</p>
+                    <p>{trip.passengerCount} pasajeros · {trip.cliente.telefono}{trip.embarcacion ? ` · ${trip.embarcacion.nombre}` : ''}</p>
+                  </div>
+                  {trip.status === 'PENDING' && <label>Asignar lancha<select defaultValue="" onChange={(event) => event.target.value && void assign(trip.id, event.target.value)}><option value="">Seleccionar…</option>{boats.filter((boat) => boat.capacidad >= trip.passengerCount).map((boat) => <option value={boat.id} key={boat.id}>{boat.nombre} · {boat.capacidad} pasajeros</option>)}</select></label>}
+                  {trip.status === 'ASSIGNED' && <button className="button button-ghost" type="button" onClick={() => void updateStatus(trip.id, 'CONFIRMED')}>Confirmar</button>}
+                  {trip.status === 'CONFIRMED' && <button className="button" type="button" onClick={() => void updateStatus(trip.id, 'COMPLETED')}>Marcar completado</button>}
+                  {trip.status === 'COMPLETED' && <button className="button button-ghost" type="button" onClick={() => void createReviewLink(trip.id)}>Generar enlace de reseña</button>}
+                  {reviewLinks[trip.id] && <label>Enlace para el cliente<input readOnly value={reviewLinks[trip.id]} onFocus={(event) => event.currentTarget.select()} /></label>}
+                </article>
+              ))}</div>
+            )}
+            <PaginationBar meta={meta} onChange={setPage} label={(value) => `${value.total} viajes`} />
+          </>
         )}
       </section>
     </section>
