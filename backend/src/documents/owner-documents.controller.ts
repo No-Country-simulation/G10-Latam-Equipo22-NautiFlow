@@ -9,17 +9,30 @@ import {
 	UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiTags } from '@nestjs/swagger';
+import {
+	ApiBearerAuth,
+	ApiBadRequestResponse,
+	ApiConsumes,
+	ApiForbiddenResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiTags,
+	ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Role } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
 import { DocumentsService } from './documents.service.js';
+import { UploadDocumentsResponseDto } from './documents.responses.js';
 import type { OwnerRegistrationFiles } from './file.types.js';
 
 // Reenvío de documentación tras un rechazo (US-04).
 @ApiTags('documents')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
+@ApiForbiddenResponse({ description: 'Requiere rol OWNER.' })
 @Controller('owners/me/documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.OWNER)
@@ -28,6 +41,13 @@ export class OwnerDocumentsController {
 
 	@Post()
 	@HttpCode(HttpStatus.OK)
+	@ApiConsumes('multipart/form-data')
+	@ApiOperation({ summary: 'Reenvía la documentación del lanchero en archivos' })
+	@ApiOkResponse({
+		type: UploadDocumentsResponseDto,
+		description: 'Devuelve el estado de la ficha y los documentos guardados.',
+	})
+	@ApiBadRequestResponse({ description: 'Sin archivos o archivos inválidos.' })
 	@UseInterceptors(
 		FileFieldsInterceptor(
 			[

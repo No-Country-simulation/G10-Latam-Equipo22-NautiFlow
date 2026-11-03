@@ -12,12 +12,28 @@ import {
 	UseInterceptors,
 	UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+	ApiAcceptedResponse,
+	ApiBadRequestResponse,
+	ApiBearerAuth,
+	ApiConsumes,
+	ApiNoContentResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiTags,
+	ApiTooManyRequestsResponse,
+	ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard.js';
 import type { OwnerRegistrationFiles } from '../documents/file.types.js';
 import { AuthService } from './auth.service.js';
+import {
+	LoginResponseDto,
+	MeResponseDto,
+	MessageResponseDto,
+} from './auth.responses.js';
 import { ChangePasswordDto } from './change-password.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { LoginDto } from './login.dto.js';
@@ -32,6 +48,14 @@ export class AuthController {
 	@Post(['register/lanchero', 'register'])
 	@HttpCode(HttpStatus.ACCEPTED)
 	@UseGuards(RateLimitGuard)
+	@ApiConsumes('multipart/form-data')
+	@ApiOperation({ summary: 'Registro de lanchero con documentación en archivos' })
+	@ApiAcceptedResponse({
+		type: MessageResponseDto,
+		description: 'La solicitud queda PENDIENTE hasta la revisión de documentación.',
+	})
+	@ApiBadRequestResponse({ description: 'Datos o archivos inválidos.' })
+	@ApiTooManyRequestsResponse({ description: 'Demasiados intentos desde este origen.' })
 	@UseInterceptors(
 		FileFieldsInterceptor(
 			[
@@ -56,6 +80,10 @@ export class AuthController {
 	@Post('login')
 	@HttpCode(HttpStatus.OK)
 	@UseGuards(RateLimitGuard)
+	@ApiOperation({ summary: 'Inicia sesión y devuelve el usuario en una cookie HttpOnly' })
+	@ApiOkResponse({ type: LoginResponseDto })
+	@ApiUnauthorizedResponse({ description: 'Credenciales inválidas o usuario inactivo.' })
+	@ApiTooManyRequestsResponse({ description: 'Demasiados intentos desde este origen.' })
 	async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
 		const session = await this.authService.login(dto);
 		this.setSessionCookie(response, session.token, session.maxAge);
@@ -64,18 +92,29 @@ export class AuthController {
 
 	@Post('logout')
 	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiOperation({ summary: 'Cierra la sesión limpiando la cookie' })
+	@ApiNoContentResponse()
 	logout(@Res({ passthrough: true }) response: Response) {
 		this.setSessionCookie(response, '', 0);
 	}
 
 	@Get('me')
+	@ApiBearerAuth()
 	@UseGuards(JwtAuthGuard)
+	@ApiOperation({ summary: 'Devuelve el usuario de la sesión actual' })
+	@ApiOkResponse({ type: MeResponseDto })
+	@ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
 	me(@Req() request: AuthenticatedRequest) {
 		return { user: request.user };
 	}
 
 	@Patch('me/password')
+	@ApiBearerAuth()
 	@UseGuards(JwtAuthGuard, RateLimitGuard)
+	@ApiOperation({ summary: 'Cambia la contraseña del usuario autenticado' })
+	@ApiOkResponse({ type: MessageResponseDto })
+	@ApiBadRequestResponse({ description: 'Contraseña actual incorrecta o nueva fuera de requisitos.' })
+	@ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
 	async changePassword(@Req() request: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
 		await this.authService.changePassword(request.user!.id, dto);
 		return { message: 'Contraseña actualizada.' };
