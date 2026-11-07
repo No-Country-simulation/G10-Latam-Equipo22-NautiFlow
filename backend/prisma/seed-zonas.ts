@@ -1,3 +1,5 @@
+// Script independiente para siembra exclusiva de zonas (TECH-14 / TECH-17).
+// NOTA: seed.ts ya incluye estas zonas de forma idempotente como parte del seed principal.
 import dotenv from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';

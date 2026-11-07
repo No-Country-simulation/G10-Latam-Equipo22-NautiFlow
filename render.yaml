@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: nautiflow-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    preDeployCommand: npm run prisma:deploy && npm run prisma:seed
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: CORS_ORIGIN
+        sync: false
+      - key: PUBLIC_APP_URL
+        sync: false

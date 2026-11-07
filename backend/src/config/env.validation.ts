@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -12,10 +13,11 @@ import {
 } from 'class-validator';
 
 export class EnvVars {
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(65535)
-  PORT: number;
+  PORT: number = 3000;
 
   @IsString()
   @IsNotEmpty()
@@ -26,9 +28,20 @@ export class EnvVars {
   @MinLength(32)
   JWT_SECRET: string;
 
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d+[smhd]$/, {
+    message: 'JWT_EXPIRES_IN debe usar segundos (s), minutos (m), horas (h) o días (d)',
+  })
+  JWT_EXPIRES_IN: string = '1d';
+
   @IsString()
   @IsNotEmpty()
   CORS_ORIGIN: string;
+
+  @IsOptional()
+  @IsString()
+  PUBLIC_APP_URL?: string;
 
   @IsIn(['development', 'test', 'production'])
   NODE_ENV: string = 'development';

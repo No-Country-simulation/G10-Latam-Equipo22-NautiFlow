@@ -360,10 +360,10 @@ con las mismas reglas de restauración.
 
 | Módulo | Método y ruta | Rol | Uso |
 | --- | --- | --- | --- |
-| Notifications | `GET /notifications` | Autenticado | Consultar notificaciones (módulo aún sin implementar) |
+| Notifications | `GET /notifications` | Autenticado | Consultar notificaciones del usuario (stub MVP) |
 
-El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, `SameSite=Lax`, con
-`Path=/api/v1` y expiración configurada por `JWT_EXPIRES_IN`; en producción también lleva `Secure`.
+El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, con
+`Path=/api/v1` y expiración configurada por `JWT_EXPIRES_IN`; en desarrollo usa `SameSite=Lax` y en producción `SameSite=None; Secure`.
 `GET /auth/me` devuelve `{ "user": { "id", "name", "email", "role", "ownerStatus" } }`.
 El logout expira la cookie en el cliente; el JWT stateless no se revoca en el servidor y sigue
 siendo válido hasta su vencimiento si fue copiado fuera del navegador.

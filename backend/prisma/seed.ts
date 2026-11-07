@@ -39,7 +39,11 @@ async function main() {
       const passwordHash = await bcrypt.hash(adminPassword, 12);
       const admin = await prisma.user.upsert({
         where: { email: adminEmail.trim().toLowerCase() },
-        update: {},
+        update: {
+          name: 'Administración NautiFlow',
+          passwordHash,
+          role: 'ADMIN',
+        },
         create: { name: 'Administración NautiFlow', email: adminEmail.trim().toLowerCase(), passwordHash, role: 'ADMIN' },
       });
       console.log(`Seed listo. Admin: ${admin.email} (${admin.id})`);
@@ -68,7 +72,11 @@ async function main() {
 
       const owner = await prisma.user.upsert({
         where: { email: ownerEmail },
-        update: {},
+        update: {
+          name: 'Carlos Ramírez',
+          passwordHash: ownerHash,
+          role: 'OWNER',
+        },
         create: {
           name: 'Carlos Ramírez',
           email: ownerEmail,
@@ -79,7 +87,11 @@ async function main() {
       });
       const demoAdmin = await prisma.user.upsert({
         where: { email: demoAdminEmail },
-        update: {},
+        update: {
+          name: 'Admin NautiFlow',
+          passwordHash: demoAdminHash,
+          role: 'ADMIN',
+        },
         create: {
           name: 'Admin NautiFlow',
           email: demoAdminEmail,

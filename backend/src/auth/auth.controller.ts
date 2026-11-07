@@ -121,11 +121,13 @@ export class AuthController {
 	}
 
 	private setSessionCookie(response: Response, token: string, maxAge: number) {
-		const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+		const isProd = process.env.NODE_ENV === 'production';
+		const sameSite = isProd ? 'SameSite=None' : 'SameSite=Lax';
+		const secure = isProd ? '; Secure' : '';
 		response.setHeader('Cache-Control', 'no-store');
 		response.setHeader(
 			'Set-Cookie',
-			`nautiflow_session=${token}; HttpOnly; SameSite=Lax; Path=/api/v1; Max-Age=${maxAge}${secure}`,
+			`nautiflow_session=${token}; HttpOnly; ${sameSite}; Path=/api/v1; Max-Age=${maxAge}${secure}`,
 		);
 	}
 }
