@@ -36,7 +36,7 @@ de partida. El detalle de arquitectura y convenciones está en [../ARCHITECTURE.
 - **Root Directory**: `backend`
 - **Framework Preset**: `NestJS`
 - **Build Command**: automático (`prisma generate` + `nest build`)
-- El archivo `vercel.json` en `backend/` define las reglas de reescritura (`rewrites`) para canalizar todas las peticiones entrantes a la función compilada.
+- Despliegue zero-config nativo: Vercel detecta automáticamente el framework NestJS y enruta el tráfico directamente a la aplicación sin necesidad de rewrites.
 - Las variables de entorno mínimas en Vercel son: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `PUBLIC_APP_URL` y `NODE_ENV=production`. `PORT` es opcional (fallback `3000`).
 
 ### Render

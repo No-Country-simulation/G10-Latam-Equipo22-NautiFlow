@@ -14,7 +14,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
-  app.use(helmet({ contentSecurityPolicy: false }));
+  const helmetFn = helmet as unknown as (options?: unknown) => any;
+  app.use(helmetFn({ contentSecurityPolicy: false }));
 
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
