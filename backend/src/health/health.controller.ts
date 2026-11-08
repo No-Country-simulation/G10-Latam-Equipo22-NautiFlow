@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Inject, Res } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { HealthResult, HealthService } from './health.service.js';
@@ -6,7 +6,7 @@ import { HealthResult, HealthService } from './health.service.js';
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly health: HealthService) {}
+  constructor(@Inject(HealthService) private readonly health: HealthService) {}
 
   @Get()
   @ApiOperation({ summary: 'Estado de la API y de la base de datos' })

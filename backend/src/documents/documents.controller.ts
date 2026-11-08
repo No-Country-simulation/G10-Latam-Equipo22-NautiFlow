@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Req, StreamableFile, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Param, ParseUUIDPipe, Req, StreamableFile, UseGuards, Res } from '@nestjs/common';
 import {
 	ApiBearerAuth,
 	ApiForbiddenResponse,
@@ -20,7 +20,7 @@ import { DocumentsService } from './documents.service.js';
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
 export class DocumentsController {
-	constructor(private readonly documentsService: DocumentsService) {}
+	constructor(@Inject(DocumentsService) private readonly documentsService: DocumentsService) {}
 
 	@Get(':id/file')
 	@ApiOperation({ summary: 'Descarga el archivo original de un documento (lanchero dueño o admin)' })

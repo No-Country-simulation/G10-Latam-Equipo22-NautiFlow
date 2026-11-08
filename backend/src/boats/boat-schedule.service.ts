@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EstadoSalida, TripStatus } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -20,8 +20,8 @@ interface SlotOptions {
 @Injectable()
 export class BoatScheduleService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
   async assertSlotAvailable(

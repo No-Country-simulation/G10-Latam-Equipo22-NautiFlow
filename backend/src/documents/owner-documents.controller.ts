@@ -2,6 +2,7 @@ import {
 	Controller,
 	HttpCode,
 	HttpStatus,
+	Inject,
 	Post,
 	Req,
 	UploadedFiles,
@@ -37,7 +38,7 @@ import type { OwnerRegistrationFiles } from './file.types.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.OWNER)
 export class OwnerDocumentsController {
-	constructor(private readonly documentsService: DocumentsService) {}
+	constructor(@Inject(DocumentsService) private readonly documentsService: DocumentsService) {}
 
 	@Post()
 	@HttpCode(HttpStatus.OK)

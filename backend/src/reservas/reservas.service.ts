@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
 	EstadoEmbarcacion,
 	EstadoReserva,
@@ -85,8 +85,8 @@ const VIAJES_CANCELABLES: TripStatus[] = [TripStatus.PENDING, TripStatus.ASSIGNE
 @Injectable()
 export class ReservasService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly schedule: BoatScheduleService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(BoatScheduleService) private readonly schedule: BoatScheduleService,
 	) {}
 
 	async create(dto: CreateReservaDto) {

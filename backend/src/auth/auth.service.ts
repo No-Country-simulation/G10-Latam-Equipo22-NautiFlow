@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -36,8 +36,8 @@ type TokenPayload = {
 @Injectable()
 export class AuthService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly config: ConfigService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(ConfigService) private readonly config: ConfigService,
 	) {}
 
 	async registerOwner(dto: RegisterOwnerDto, files: OwnerRegistrationFiles): Promise<void> {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -29,7 +29,7 @@ import { ListEmptyLegsQueryDto } from './list-empty-legs-query.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class EmptyLegsController {
-  constructor(private readonly emptyLegsService: EmptyLegsService) {}
+  constructor(@Inject(EmptyLegsService) private readonly emptyLegsService: EmptyLegsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Tramos vacíos paginados (por defecto AVAILABLE)' })

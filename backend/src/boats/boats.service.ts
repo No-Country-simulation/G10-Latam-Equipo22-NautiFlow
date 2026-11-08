@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -10,8 +10,8 @@ import { UpdateBoatDto } from './update-boat.dto.js';
 @Injectable()
 export class BoatsService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly schedule: BoatScheduleService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(BoatScheduleService) private readonly schedule: BoatScheduleService,
 	) {}
 
 	listApproved() {

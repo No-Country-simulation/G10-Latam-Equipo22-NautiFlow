@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,7 +18,7 @@ interface RateWindow {
 export class RateLimitGuard implements CanActivate {
   private readonly windows = new Map<string, RateWindow>();
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
     const max = this.config.get<number>('AUTH_RATE_LIMIT_MAX') ?? 10;

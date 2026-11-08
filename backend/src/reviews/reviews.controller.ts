@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiCreatedResponse,
@@ -19,7 +19,7 @@ import { ReviewsService } from './reviews.service.js';
 @ApiTags('reviews')
 @Controller('public/reviews')
 export class ReviewsController {
-	constructor(private readonly reviewsService: ReviewsService) {}
+	constructor(@Inject(ReviewsService) private readonly reviewsService: ReviewsService) {}
 
 	@Get(':token')
 	@ApiOperation({ summary: 'Contexto del viaje a reseñar a partir del token del enlace' })

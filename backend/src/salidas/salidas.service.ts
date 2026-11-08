@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
 	EstadoEmbarcacion,
@@ -46,8 +46,8 @@ function construirRating(average: number | null, total: number): Rating {
 @Injectable()
 export class SalidasService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly schedule: BoatScheduleService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(BoatScheduleService) private readonly schedule: BoatScheduleService,
 	) {}
 
 	async create(dto: CreateSalidaDto, adminId: string) {

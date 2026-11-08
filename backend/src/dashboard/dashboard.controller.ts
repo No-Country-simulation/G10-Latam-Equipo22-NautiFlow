@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { Role } from '../generated/prisma/client.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -15,7 +15,7 @@ import { DashboardService } from './dashboard.service.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class DashboardController {
-	constructor(private readonly dashboardService: DashboardService) {}
+	constructor(@Inject(DashboardService) private readonly dashboardService: DashboardService) {}
 
 	@Get('resumen')
 	@ApiOperation({ summary: 'Contadores operativos del panel de administración' })

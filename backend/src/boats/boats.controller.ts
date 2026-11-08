@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Get,
+	Inject,
 	Param,
 	ParseUUIDPipe,
 	Patch,
@@ -43,7 +44,7 @@ import { BoatsService } from './boats.service.js';
 @ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
 @Controller('boats')
 export class BoatsController {
-	constructor(private readonly boatsService: BoatsService) {}
+	constructor(@Inject(BoatsService) private readonly boatsService: BoatsService) {}
 
 	@Get('admin/approved')
 	@UseGuards(JwtAuthGuard, RolesGuard)

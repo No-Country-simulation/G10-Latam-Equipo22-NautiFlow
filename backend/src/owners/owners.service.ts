@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { OwnerStatus, DocumentStatus, DocumentType, EstadoEmbarcacion, Prisma } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
@@ -8,7 +8,7 @@ import type { UpdateProfileDto } from './update-profile.dto.js';
 
 @Injectable()
 export class OwnersService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
 	getMyRequest(userId: string) {
 		return this.prisma.owner.findUniqueOrThrow({

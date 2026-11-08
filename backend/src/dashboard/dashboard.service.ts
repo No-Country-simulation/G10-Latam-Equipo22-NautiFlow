@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DocumentStatus, EstadoSalida, OwnerStatus, TripStatus } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class DashboardService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
 	async resumen() {
 		const ahora = new Date();

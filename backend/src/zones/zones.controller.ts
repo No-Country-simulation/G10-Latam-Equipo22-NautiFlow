@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -26,7 +26,7 @@ import { ZonesService } from './zones.service.js';
 @ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
 @Controller('zones')
 export class ZonesController {
-	constructor(private readonly zonesService: ZonesService) {}
+	constructor(@Inject(ZonesService) private readonly zonesService: ZonesService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Zonas activas para el catálogo público' })

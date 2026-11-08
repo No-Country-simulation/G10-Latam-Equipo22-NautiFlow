@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -34,7 +34,7 @@ import { UpdateReservaEstadoDto } from './update-reserva-estado.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class ReservasController {
-	constructor(private readonly reservasService: ReservasService) {}
+	constructor(@Inject(ReservasService) private readonly reservasService: ReservasService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Reservas paginadas con filtros de estado y tramo' })

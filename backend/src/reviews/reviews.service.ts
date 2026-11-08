@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, GoneException, NotFoundException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
@@ -43,8 +43,8 @@ function construirRating(average: number | null, total: number): Rating {
 @Injectable()
 export class ReviewsService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly config: ConfigService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(ConfigService) private readonly config: ConfigService,
 	) {}
 
 	async createLink(tripId: string) {

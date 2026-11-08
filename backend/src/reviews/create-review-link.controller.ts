@@ -1,4 +1,4 @@
-import { Controller, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Controller, Inject, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -24,7 +24,7 @@ import { ReviewsService } from './reviews.service.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class CreateReviewLinkController {
-	constructor(private readonly reviewsService: ReviewsService) {}
+	constructor(@Inject(ReviewsService) private readonly reviewsService: ReviewsService) {}
 
 	@Post(':id/review-link')
 	@ApiOperation({ summary: 'Genera el enlace de reseña para un viaje COMPLETADO' })

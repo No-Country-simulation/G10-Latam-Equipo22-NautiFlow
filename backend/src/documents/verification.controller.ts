@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBearerAuth,
 	ApiBadRequestResponse,
@@ -27,7 +27,7 @@ import { ReviewDocumentDto } from './review-document.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class AdminDocumentsController {
-	constructor(private readonly documentsService: DocumentsService) {}
+	constructor(@Inject(DocumentsService) private readonly documentsService: DocumentsService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Documentos de lanchero paginados (por defecto PENDIENTES)' })

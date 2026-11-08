@@ -4,6 +4,7 @@ import {
 	Get,
 	HttpCode,
 	HttpStatus,
+	Inject,
 	Patch,
 	Post,
 	Req,
@@ -43,7 +44,7 @@ import type { AuthenticatedRequest } from './types.js';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
 	@Post(['register/lanchero', 'register'])
 	@HttpCode(HttpStatus.ACCEPTED)

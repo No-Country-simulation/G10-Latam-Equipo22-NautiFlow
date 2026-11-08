@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface ZoneInput {
@@ -9,7 +9,7 @@ export interface ZoneInput {
 
 @Injectable()
 export class ZonesService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
 	listActive() {
 		return this.prisma.zona.findMany({

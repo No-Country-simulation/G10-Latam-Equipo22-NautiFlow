@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
 	BadRequestException,
 	ConflictException,
@@ -22,7 +22,7 @@ import type { ListDocumentsQueryDto } from './list-documents-query.dto.js';
 
 @Injectable()
 export class DocumentsService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
 	async list(query: ListDocumentsQueryDto) {
 		const where: Prisma.OwnerDocumentWhereInput = {

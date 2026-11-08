@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBearerAuth,
 	ApiBadRequestResponse,
@@ -27,7 +27,7 @@ import { ReviewRequestDto } from './review-request.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class VerificationController {
-	constructor(private readonly ownersService: OwnersService) {}
+	constructor(@Inject(OwnersService) private readonly ownersService: OwnersService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Solicitudes de lanchero paginadas (por defecto todas)' })

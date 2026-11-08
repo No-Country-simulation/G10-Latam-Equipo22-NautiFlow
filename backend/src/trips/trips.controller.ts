@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -35,7 +35,7 @@ import { AssignBoatDto } from './assign-boat.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class TripsController {
-	constructor(private readonly tripsService: TripsService) {}
+	constructor(@Inject(TripsService) private readonly tripsService: TripsService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Viajes paginados con filtros de estado, texto y fechas' })

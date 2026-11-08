@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EstadoEmbarcacion, OwnerStatus, Prisma, TripStatus } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
@@ -11,9 +11,9 @@ import type { ListTripsQueryDto } from './list-trips-query.dto.js';
 @Injectable()
 export class TripsService {
 	constructor(
-		private readonly prisma: PrismaService,
-		private readonly schedule: BoatScheduleService,
-		private readonly reservas: ReservasService,
+		@Inject(PrismaService) private readonly prisma: PrismaService,
+		@Inject(BoatScheduleService) private readonly schedule: BoatScheduleService,
+		@Inject(ReservasService) private readonly reservas: ReservasService,
 	) {}
 
 	async list(query: ListTripsQueryDto) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { Controller, Get, Inject, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PublicSalidasQueryDto } from './public-salidas-query.dto.js';
 import {
@@ -11,7 +11,7 @@ import { SalidasService } from './salidas.service.js';
 @ApiTags('public-salidas')
 @Controller('public/salidas')
 export class PublicSalidasController {
-	constructor(private readonly salidasService: SalidasService) {}
+	constructor(@Inject(SalidasService) private readonly salidasService: SalidasService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Lista salidas PROGRAMADAS futuras de lanchas elegibles' })

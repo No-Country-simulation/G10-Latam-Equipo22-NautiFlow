@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiConflictResponse,
@@ -16,7 +16,7 @@ import { ReservasService } from './reservas.service.js';
 @ApiTags('public-reservas')
 @Controller('public/reservas')
 export class PublicReservasController {
-	constructor(private readonly reservasService: ReservasService) {}
+	constructor(@Inject(ReservasService) private readonly reservasService: ReservasService) {}
 
 	@Post()
 	@HttpCode(HttpStatus.CREATED)

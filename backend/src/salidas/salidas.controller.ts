@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -35,7 +35,7 @@ import { UpdateTramoDto } from './update-tramo.dto.js';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class SalidasController {
-	constructor(private readonly salidasService: SalidasService) {}
+	constructor(@Inject(SalidasService) private readonly salidasService: SalidasService) {}
 
 	@Get()
 	@ApiOperation({ summary: 'Salidas paginadas con sus tramos (por defecto todas)' })

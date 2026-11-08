@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,7 +19,7 @@ const TRAMOS_DE_ORIGEN: TripStatus[] = [TripStatus.ASSIGNED, TripStatus.CONFIRME
 
 @Injectable()
 export class EmptyLegsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(dto: CreateEmptyLegDto) {
     const trip = await this.prisma.trip.findUnique({

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBearerAuth,
 	ApiConflictResponse,
@@ -23,7 +23,7 @@ import { UpdateProfileDto } from './update-profile.dto.js';
 @ApiForbiddenResponse({ description: 'Requiere rol OWNER.' })
 @Controller('owners')
 export class OwnersController {
-	constructor(private readonly ownersService: OwnersService) {}
+	constructor(@Inject(OwnersService) private readonly ownersService: OwnersService) {}
 
 	@Get('me/solicitud')
 	@UseGuards(JwtAuthGuard, RolesGuard)

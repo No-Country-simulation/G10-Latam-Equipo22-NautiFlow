@@ -1,13 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { RolesGuard } from './roles.guard.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard.js';
 
+@Global()
 @Module({
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard, RolesGuard, RateLimitGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, RateLimitGuard],
 })
 export class AuthModule {}
