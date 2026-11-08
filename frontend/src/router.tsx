@@ -65,6 +65,14 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: 'client/dashboard',
+        element: (
+          <ProtectedRoute role="CLIENT">
+            <RoleDashboardPage role="CLIENT" />
+          </ProtectedRoute>
+        ),
+      },
       { path: 'estado', element: <StatusPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
