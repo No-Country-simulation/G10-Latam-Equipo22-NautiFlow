@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,

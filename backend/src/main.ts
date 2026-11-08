@@ -54,7 +54,7 @@ async function bootstrap() {
     // Si el bundler serverless omite metadatos de tipos en DTOs de Swagger, no bloquear el arranque de la API.
   }
 
-  await app.listen(config.get<number>('PORT', 3000));
+  await app.listen(process.env.PORT ?? config.get<number>('PORT', 3000));
 }
 
 await bootstrap();
