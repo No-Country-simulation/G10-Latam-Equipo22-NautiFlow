@@ -6,6 +6,43 @@ versionan en `backend/prisma/migrations`.
 > Implementado: `User`, `Owner`, flota, documentos privados, clientes, viajes y reseñas/token.
 > La unificación de `User`/`Owner`/`Role` queda pendiente (TECH-14) hasta que mergee US-01.
 
+## Nomenclatura (D-010)
+
+Regla: **dominio en español, vocabulario técnico en inglés** (`id`, `email`, `passwordHash`,
+`createdAt`, `updatedAt`, `mimeType`, `tokenHash`). Todas las tablas de la base de datos están en
+español. El renombre de las tablas legadas se hizo en la migración
+`20261107100000_nomenclatura_bd` **solo a nivel de base de datos** (modelos Prisma, DTOs, rutas y
+JSON conservan sus nombres hasta TECH-14, así que no cambió ninguna API).
+
+| Tabla (BD) | Modelo Prisma | Contenido |
+| --- | --- | --- |
+| `usuarios` | `User` | cuentas con acceso (ADMIN/OWNER) |
+| `lancheros` | `Owner` | propietarios de lanchas y su revisión |
+| `documentos_lanchero` | `OwnerDocument` | archivos privados (BYTEA) |
+| `clientes` | `Cliente` | contactos sin cuenta |
+| `viajes` | `Trip` | viajes operativos |
+| `salidas` | `Salida` | salidas publicables del catálogo |
+| `tramos` | `Tramo` | ida/vuelta de una salida (precio y cupo) |
+| `tramos_vacios` | `EmptyLeg` | retornos sin pasajeros |
+| `reservas` | `Reserva` | solicitudes de reserva de turistas |
+| `zonas` | `Zona` | zonas de cobertura |
+| `embarcaciones` | `Embarcacion` | lanchas del lanchero |
+| `embarcaciones_zonas` | `EmbarcacionZona` | cobertura N:M |
+| `tokens_resena` | `ReviewToken` | enlace único de reseña |
+| `resenas` | `Review` | reseñas con puntaje |
+
+Tipos de enum: `Rol`, `EstadoUsuario`, `EstadoLanchero`, `TipoDocumento`, `EstadoDocumento`,
+`EstadoViaje`, `EstadoTramoVacio`, `EstadoEmbarcacion`, `EstadoSalida`, `EstadoTramo`,
+`TipoTramo`, `EstadoReserva`.
+
+Las tablas de abajo describen los **campos del modelo Prisma (código)**. En las tablas legadas la
+columna de la base de datos puede tener otro nombre (español) y la equivalencia está en la tabla
+anterior: el código no cambió, solo cambió el nombre físico vía `@map`.
+
+Pendiente (TECH-14 / Fase 2): renombrar también modelos, campos, DTOs, rutas y JSON del código, y
+alinear `Role`/`Owner`. Los **valores** de enum en inglés (`PENDING`, `APPROVED`, ...) quedan para
+esa fase: Prisma 7 tiene un bug conocido con `@map` en valores de enum.
+
 ## Implementado
 
 ### User
