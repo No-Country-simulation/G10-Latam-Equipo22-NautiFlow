@@ -3330,3 +3330,579 @@ html {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Rediseño de Landing Page, Navbar y Footer (Referencia NautiFlow)
+   ========================================================================== */
+
+.app-header.landing-header {
+  position: static;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  background: #0d3b38;
+  color: #fff;
+}
+
+.app-header.landing-header .brand {
+  color: #fff;
+}
+
+.app-header.landing-header .app-nav a {
+  color: rgb(255 255 255 / 84%);
+  font-weight: 500;
+  transition: color 140ms ease;
+}
+
+.app-header.landing-header .app-nav a:hover {
+  color: #fff;
+}
+
+.app-header.landing-header .nav-user {
+  color: #d6ede8;
+}
+
+.app-header.landing-header .app-nav .nav-cta,
+.app-header.landing-header .nav-logout-btn {
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 14%);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.app-header.landing-header .app-nav .nav-cta:hover,
+.app-header.landing-header .nav-logout-btn:hover {
+  border-color: rgb(255 255 255 / 38%);
+  background: rgb(255 255 255 / 24%);
+  color: #fff;
+}
+
+.nf-landing {
+  background: #f6f8f7;
+  color: #0f2926;
+  font-family: 'Inter', 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Hero Section */
+.nf-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 610px;
+  padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+  overflow: hidden;
+  background: #0d3b38;
+  color: #fff;
+}
+
+.nf-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+
+.nf-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgb(9 43 40 / 90%) 0%,
+    rgb(13 59 56 / 82%) 52%,
+    rgb(11 49 46 / 88%) 100%
+  );
+  z-index: 1;
+}
+
+.nf-hero-container,
+.nf-section-container {
+  position: relative;
+  z-index: 2;
+  width: min(1140px, calc(100% - 2.5rem));
+  margin: 0 auto;
+}
+
+.nf-hero-content {
+  max-width: 780px;
+}
+
+.nf-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.34rem 0.9rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 94%);
+  color: #0d3b38;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+}
+
+.nf-hero-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #147867;
+}
+
+.nf-hero-content h1 {
+  max-width: 16ch;
+  margin: 1.25rem 0 1rem;
+  color: #fff;
+  font-size: clamp(2.4rem, 4.6vw, 3.85rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+}
+
+.nf-hero-lead {
+  max-width: 56ch;
+  margin: 0;
+  color: rgb(255 255 255 / 84%);
+  font-size: clamp(1rem, 1.35vw, 1.14rem);
+  line-height: 1.6;
+}
+
+.nf-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem;
+  margin-top: 2rem;
+}
+
+.nf-audience-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.35rem 1.4rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 16px;
+  background: rgb(11 49 46 / 68%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 16%);
+}
+
+.nf-audience-icon {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 0.85rem;
+  border-radius: 11px;
+  background: rgb(255 255 255 / 14%);
+  color: #7fd1c1;
+}
+
+.nf-audience-card h2 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.nf-audience-card p {
+  margin: 0 0 1.15rem;
+  color: rgb(255 255 255 / 78%);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.nf-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 0.65rem 1.15rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+.nf-hero-btn-solid {
+  border: 1px solid #fff;
+  background: #fff;
+  color: #0d3b38;
+}
+
+.nf-hero-btn-solid:hover {
+  background: #eaf5f1;
+}
+
+.nf-hero-btn-outline {
+  border: 1px solid rgb(255 255 255 / 32%);
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+
+.nf-hero-btn-outline:hover {
+  border-color: rgb(255 255 255 / 55%);
+  background: rgb(255 255 255 / 18%);
+}
+
+.nf-hero-perks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1.65rem;
+  color: rgb(255 255 255 / 82%);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.nf-hero-perks > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nf-hero-perks svg {
+  color: #5eead4;
+}
+
+.nf-hero-disclaimer {
+  margin: 0.75rem 0 0;
+  color: rgb(255 255 255 / 62%);
+  font-size: 0.76rem;
+}
+
+/* Section Headers */
+.nf-section-header {
+  max-width: 640px;
+  margin-bottom: 2.25rem;
+}
+
+.nf-section-eyebrow {
+  margin: 0 0 0.45rem;
+  color: #147867;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nf-section-header h2 {
+  margin: 0;
+  color: #0f2926;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.nf-section-subtitle {
+  margin: 0.65rem 0 0;
+  color: #5b6f6b;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+/* Nuestra Red Section */
+.nf-network-section {
+  padding: clamp(4rem, 7vw, 5.5rem) 0;
+  background: #f6f8f7;
+}
+
+.nf-boat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.35rem;
+}
+
+.nf-boat-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2ebe8;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgb(15 41 38 / 5%);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.nf-boat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgb(15 41 38 / 9%);
+}
+
+.nf-boat-media {
+  position: relative;
+  height: 195px;
+  overflow: hidden;
+  background: #dce8e4;
+}
+
+.nf-boat-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nf-boat-verified-badge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.26rem 0.68rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 94%);
+  color: #0f5f53;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+.nf-boat-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.15rem 1.25rem 1.3rem;
+}
+
+.nf-boat-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.nf-boat-header-row h3 {
+  margin: 0;
+  color: #0f2926;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nf-boat-operator {
+  margin: 0.18rem 0 0;
+  color: #6b7f7b;
+  font-size: 0.78rem;
+}
+
+.nf-boat-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #1f2937;
+  font-size: 0.82rem;
+}
+
+.nf-boat-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 1.1rem;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #edf2f0;
+}
+
+.nf-boat-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  margin: 0;
+  color: #4f6460;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.nf-boat-meta-item svg {
+  color: #147867;
+}
+
+.nf-boat-description {
+  margin: 0.65rem 0 0;
+  color: #687c78;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.nf-fleet-empty {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  background: #fff;
+  color: #5b6f6b;
+  font-size: 0.92rem;
+}
+
+/* Cómo Funciona Section */
+.nf-how-section {
+  padding: clamp(4rem, 7vw, 5.5rem) 0;
+  border-top: 1px solid #e6eeeb;
+  background: #fff;
+}
+
+.nf-how-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.35rem;
+}
+
+.nf-how-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  padding: 1.65rem;
+  border: 1px solid #d8ebe4;
+  border-radius: 16px;
+  background: #eaf5f1;
+}
+
+.nf-how-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.nf-how-icon {
+  display: inline-grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 12px;
+  background: #147867;
+  color: #fff;
+}
+
+.nf-how-card-head h3 {
+  margin: 0 0 0.25rem;
+  color: #0f2926;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.nf-how-card-head p {
+  margin: 0;
+  color: #4b635e;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.nf-how-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nf-how-step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgb(20 120 103 / 12%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 78%);
+}
+
+.nf-how-step-num {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: #d5ece4;
+  color: #0f5f53;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.nf-how-step-item strong {
+  color: #0f2926;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+/* Experiencias Section */
+.nf-experiences-section {
+  padding: clamp(4rem, 7vw, 5.5rem) 0;
+  background: #103b37;
+  color: #fff;
+}
+
+.nf-section-header-light h2 {
+  color: #fff;
+}
+
+.nf-eyebrow-light {
+  color: #4fd1b5;
+}
+
+.nf-experiences-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.15rem;
+}
+
+.nf-experience-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.4rem 1.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.nf-experience-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.nf-experience-quote {
+  margin: 0 0 1rem;
+  color: rgb(255 255 255 / 92%);
+  font-size: 0.94rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.nf-experience-meta {
+  margin: auto 0 0;
+  color: #8eb3ad;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Landing Footer Color Update */
+.app-footer.landing-footer {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  background: #092926;
+  color: #c9e2dd;
+}
+
+@media (max-width: 820px) {
+  .nf-audience-grid,
+  .nf-how-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nf-hero {
+    min-height: auto;
+  }
+}
