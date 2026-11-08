@@ -92,14 +92,16 @@ export class OwnersService {
 	}
 
 	async listRequests(query: ListSolicitudesQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.OwnerWhereInput = query.status ? { status: query.status } : {};
 
 		const [data, total] = await Promise.all([
 			this.prisma.owner.findMany({
 				where,
 				orderBy: { createdAt: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					status: true,
@@ -124,7 +126,7 @@ export class OwnersService {
 			this.prisma.owner.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async reviewRequest(id: string, decision: 'APPROVED' | 'REJECTED', note: string, reviewerId: string) {

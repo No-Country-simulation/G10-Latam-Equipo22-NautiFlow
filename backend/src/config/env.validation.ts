@@ -1,4 +1,4 @@
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -14,6 +14,7 @@ import {
 
 export class EnvVars {
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(65535)
@@ -43,22 +44,26 @@ export class EnvVars {
   @IsString()
   PUBLIC_APP_URL?: string;
 
+  @IsOptional()
   @IsIn(['development', 'test', 'production'])
   NODE_ENV: string = 'development';
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(1000)
   AUTH_RATE_LIMIT_MAX: number = 10;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(3600)
   AUTH_RATE_LIMIT_WINDOW_SECONDS: number = 60;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(24)

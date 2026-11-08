@@ -78,6 +78,8 @@ export class EmptyLegsService {
   }
 
   async list(query: ListEmptyLegsQueryDto) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
     const where: Prisma.EmptyLegWhereInput = {
       status: query.status ?? EmptyLegStatus.AVAILABLE,
     };
@@ -86,8 +88,8 @@ export class EmptyLegsService {
       this.prisma.emptyLeg.findMany({
         where,
         orderBy: { scheduledAt: 'asc' },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+        skip: (page - 1) * limit,
+        take: limit,
         select: {
           id: true,
           origin: true,
@@ -122,6 +124,6 @@ export class EmptyLegsService {
       this.prisma.emptyLeg.count({ where }),
     ]);
 
-    return buildPaginated(data, total, query.page, query.limit);
+    return buildPaginated(data, total, page, limit);
   }
 }

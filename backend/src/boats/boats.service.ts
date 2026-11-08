@@ -26,6 +26,8 @@ export class BoatsService {
 	}
 
 	async search(query: SearchBoatsQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const q = query.q?.trim();
 		const where: Prisma.EmbarcacionWhereInput = {
 			estado: query.estado ?? EstadoEmbarcacion.VERIFICADA,
@@ -35,7 +37,7 @@ export class BoatsService {
 			where.zonas = { some: { zonaId: query.zonaId } };
 		}
 		if (query.capacidadMin) {
-			where.capacidad = { gte: query.capacidadMin };
+			where.capacidad = { gte: Number(query.capacidadMin) };
 		}
 		if (q) {
 			where.OR = [
@@ -54,8 +56,8 @@ export class BoatsService {
 			this.prisma.embarcacion.findMany({
 				where,
 				orderBy: { nombre: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					nombre: true,
@@ -76,7 +78,7 @@ export class BoatsService {
 			this.prisma.embarcacion.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async listMine(userId: string) {

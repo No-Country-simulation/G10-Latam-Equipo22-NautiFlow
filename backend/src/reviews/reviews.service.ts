@@ -113,6 +113,8 @@ export class ReviewsService {
 	}
 
 	async listPublicBoats(query: PublicBoatsQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.EmbarcacionWhereInput = { ...EMBARCACION_ELEGIBLE };
 		if (query.zonaId) {
 			where.zonas = { some: { zonaId: query.zonaId } };
@@ -122,8 +124,8 @@ export class ReviewsService {
 			this.prisma.embarcacion.findMany({
 				where,
 				orderBy: { nombre: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: CAMPOS_PUBLICOS,
 			}),
 			this.prisma.embarcacion.count({ where }),
@@ -133,8 +135,8 @@ export class ReviewsService {
 		return buildPaginated(
 			boats.map((boat) => ({ ...boat, rating: ratings.get(boat.id) ?? SIN_RATING })),
 			total,
-			query.page,
-			query.limit,
+			page,
+			limit,
 		);
 	}
 
@@ -164,6 +166,8 @@ export class ReviewsService {
 	}
 
 	async listPublicBoatReviews(id: string, query: PaginationQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const boat = await this.prisma.embarcacion.findFirst({
 			where: { id, ...EMBARCACION_ELEGIBLE },
 			select: { id: true },
@@ -174,13 +178,13 @@ export class ReviewsService {
 			this.prisma.review.findMany({
 				where: { embarcacionId: id },
 				orderBy: { createdAt: 'desc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: { rating: true, comment: true, createdAt: true },
 			}),
 			this.prisma.review.count({ where: { embarcacionId: id } }),
 		]);
-		return buildPaginated(reviews, total, query.page, query.limit);
+		return buildPaginated(reviews, total, page, limit);
 	}
 
 	private async ratingsByBoat(ids: string[]) {

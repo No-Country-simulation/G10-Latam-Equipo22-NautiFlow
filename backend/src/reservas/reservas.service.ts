@@ -149,6 +149,8 @@ export class ReservasService {
 	}
 
 	async list(query: ListReservasQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.ReservaWhereInput = {};
 		if (query.estado) where.estado = query.estado;
 		if (query.salidaId) where.salidaId = query.salidaId;
@@ -172,14 +174,14 @@ export class ReservasService {
 			this.prisma.reserva.findMany({
 				where,
 				orderBy: { createdAt: 'desc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: RESERVA_ADMIN_SELECT,
 			}),
 			this.prisma.reserva.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async detail(id: string) {

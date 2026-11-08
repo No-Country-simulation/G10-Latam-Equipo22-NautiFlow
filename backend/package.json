@@ -5,6 +5,7 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "main": "dist/main.js",
   "scripts": {
     "build": "nest build",
     "prebuild": "prisma generate",

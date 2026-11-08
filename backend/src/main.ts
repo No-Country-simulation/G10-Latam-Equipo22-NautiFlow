@@ -27,28 +27,32 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('NautiFlow API')
-    .setDescription('Gestión de lanchas, viajes y reputación en el Delta del Tigre.')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
+  try {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('NautiFlow API')
+      .setDescription('Gestión de lanchas, viajes y reputación en el Delta del Tigre.')
+      .setVersion('0.1.0')
+      .addBearerAuth()
+      .build();
 
-  SwaggerModule.setup(
-    'api/docs',
-    app,
-    SwaggerModule.createDocument(app, swaggerConfig),
-    {
-      customSiteTitle: 'NautiFlow API Docs',
-      customCssUrl: [
-        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
-      ],
-      customJs: [
-        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js',
-      ],
-    },
-  );
+    SwaggerModule.setup(
+      'api/docs',
+      app,
+      SwaggerModule.createDocument(app, swaggerConfig),
+      {
+        customSiteTitle: 'NautiFlow API Docs',
+        customCssUrl: [
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css',
+        ],
+        customJs: [
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.js',
+        ],
+      },
+    );
+  } catch {
+    // Si el bundler serverless omite metadatos de tipos en DTOs de Swagger, no bloquear el arranque de la API.
+  }
 
   await app.listen(config.get<number>('PORT', 3000));
 }

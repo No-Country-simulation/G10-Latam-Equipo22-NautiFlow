@@ -25,6 +25,8 @@ export class DocumentsService {
 	constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
 	async list(query: ListDocumentsQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.OwnerDocumentWhereInput = {
 			status: query.status ?? DocumentStatus.PENDING,
 			...(query.type ? { type: query.type } : {}),
@@ -34,8 +36,8 @@ export class DocumentsService {
 			this.prisma.ownerDocument.findMany({
 				where,
 				orderBy: { createdAt: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					ownerId: true,
@@ -53,7 +55,7 @@ export class DocumentsService {
 			this.prisma.ownerDocument.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async review(id: string, decision: 'APPROVED' | 'REJECTED', note: string, reviewerId: string) {

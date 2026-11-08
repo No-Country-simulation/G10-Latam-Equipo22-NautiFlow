@@ -110,6 +110,8 @@ export class SalidasService {
 	}
 
 	async list(query: ListSalidasQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.SalidaWhereInput = {};
 		if (query.estado) where.estado = query.estado;
 
@@ -117,8 +119,8 @@ export class SalidasService {
 			this.prisma.salida.findMany({
 				where,
 				orderBy: { fechaSalida: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					fechaSalida: true,
@@ -146,7 +148,7 @@ export class SalidasService {
 			this.prisma.salida.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async adminDetail(id: string) {
@@ -349,12 +351,14 @@ export class SalidasService {
 			};
 		}
 
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const [salidas, total] = await Promise.all([
 			this.prisma.salida.findMany({
 				where,
 				orderBy: { fechaSalida: 'asc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					fechaSalida: true,
@@ -388,8 +392,8 @@ export class SalidasService {
 				),
 			})),
 			total,
-			query.page,
-			query.limit,
+			page,
+			limit,
 		);
 	}
 

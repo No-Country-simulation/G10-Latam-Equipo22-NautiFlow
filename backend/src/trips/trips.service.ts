@@ -17,6 +17,8 @@ export class TripsService {
 	) {}
 
 	async list(query: ListTripsQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
 		const where: Prisma.TripWhereInput = {};
 		if (query.status) where.status = query.status;
 
@@ -46,8 +48,8 @@ export class TripsService {
 			this.prisma.trip.findMany({
 				where,
 				orderBy: { scheduledAt: 'desc' },
-				skip: (query.page - 1) * query.limit,
-				take: query.limit,
+				skip: (page - 1) * limit,
+				take: limit,
 				select: {
 					id: true,
 					scheduledAt: true,
@@ -62,7 +64,7 @@ export class TripsService {
 			this.prisma.trip.count({ where }),
 		]);
 
-		return buildPaginated(data, total, query.page, query.limit);
+		return buildPaginated(data, total, page, limit);
 	}
 
 	async create(dto: CreateTripDto, adminId: string) {
