@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Bell,
   CalendarClock,
@@ -35,6 +35,7 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [logoutError, setLogoutError] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
   const isLanding = location.pathname === '/';
   const isWorkspace =
     Boolean(user) &&
@@ -42,6 +43,16 @@ export function AppLayout() {
       location.pathname.startsWith('/owner') ||
       location.pathname.startsWith('/client') ||
       location.pathname.startsWith('/dashboard'));
+
+  useEffect(() => {
+    function handleScroll() {
+      setIsScrolled(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
 
   async function handleLogout() {
     setLogoutError('');
@@ -176,9 +187,12 @@ export function AppLayout() {
     );
   }
 
+  const headerModeClass =
+    isLanding && !isScrolled ? 'is-transparent' : 'is-scrolled';
+
   return (
     <div className="app-shell">
-      <header className="app-header landing-header">
+      <header className={`app-header landing-header ${headerModeClass}`}>
         <NavLink to="/" className="brand">
           <img src="/favicon.ico" alt="" className="brand-logo" />
           <span>NautiFlow</span>

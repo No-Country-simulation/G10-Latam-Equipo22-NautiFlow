@@ -5,6 +5,7 @@ import {
   Check,
   Compass,
   MapPin,
+  MessageCircle,
   Ship,
   Star,
   Users,
@@ -429,6 +430,18 @@ export function LandingPage() {
                 'Empezar a operar',
               ]}
             />
+          </div>
+
+          <div className="nf-how-cta-row">
+            <a
+              href="https://wa.me/5491100000000?text=Hola%20NautiFlow%2C%20quiero%20consultar%20por%20un%20viaje%20en%20el%20Delta"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nf-whatsapp-btn"
+            >
+              <MessageCircle size={18} aria-hidden="true" />
+              <span>Consultar por WhatsApp</span>
+            </a>
           </div>
         </div>
       </section>

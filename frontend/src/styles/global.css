@@ -3336,45 +3336,103 @@ html {
    ========================================================================== */
 
 .app-header.landing-header {
-  position: static;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  background: #0d3b38;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 60;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    color 220ms ease;
+}
+
+.app-header.landing-header.is-transparent {
+  border-bottom: 1px solid transparent;
+  background: transparent;
   color: #fff;
 }
 
-.app-header.landing-header .brand {
+.app-header.landing-header.is-transparent .brand {
   color: #fff;
 }
 
-.app-header.landing-header .app-nav a {
-  color: rgb(255 255 255 / 84%);
+.app-header.landing-header.is-transparent .app-nav a {
+  color: rgb(255 255 255 / 88%);
   font-weight: 500;
   transition: color 140ms ease;
 }
 
-.app-header.landing-header .app-nav a:hover {
+.app-header.landing-header.is-transparent .app-nav a:hover {
   color: #fff;
 }
 
-.app-header.landing-header .nav-user {
+.app-header.landing-header.is-transparent .nav-user {
   color: #d6ede8;
 }
 
-.app-header.landing-header .app-nav .nav-cta,
-.app-header.landing-header .nav-logout-btn {
-  border: 1px solid rgb(255 255 255 / 22%);
+.app-header.landing-header.is-transparent .app-nav .nav-cta,
+.app-header.landing-header.is-transparent .nav-logout-btn {
+  border: 1px solid rgb(255 255 255 / 24%);
   border-radius: 9px;
-  background: rgb(255 255 255 / 14%);
+  background: rgb(255 255 255 / 16%);
   color: #fff;
   backdrop-filter: blur(6px);
   transition: background-color 140ms ease, border-color 140ms ease;
 }
 
-.app-header.landing-header .app-nav .nav-cta:hover,
-.app-header.landing-header .nav-logout-btn:hover {
-  border-color: rgb(255 255 255 / 38%);
-  background: rgb(255 255 255 / 24%);
+.app-header.landing-header.is-transparent .app-nav .nav-cta:hover,
+.app-header.landing-header.is-transparent .nav-logout-btn:hover {
+  border-color: rgb(255 255 255 / 42%);
+  background: rgb(255 255 255 / 26%);
   color: #fff;
+}
+
+.app-header.landing-header.is-scrolled {
+  border-bottom: 1px solid #dce6e3;
+  background: rgb(246 248 247 / 96%);
+  color: #0f2926;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 18px rgb(15 41 38 / 6%);
+}
+
+.app-header.landing-header.is-scrolled .brand {
+  color: #0b514f;
+}
+
+.app-header.landing-header.is-scrolled .app-nav a {
+  color: #355f5b;
+  font-weight: 500;
+  transition: color 140ms ease;
+}
+
+.app-header.landing-header.is-scrolled .app-nav a:hover {
+  color: #0b514f;
+}
+
+.app-header.landing-header.is-scrolled .nav-user {
+  color: #164844;
+}
+
+.app-header.landing-header.is-scrolled .app-nav .nav-cta,
+.app-header.landing-header.is-scrolled .nav-logout-btn {
+  border: 1px solid #0f5f53;
+  border-radius: 9px;
+  background: #0f5f53;
+  color: #fff;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.app-header.landing-header.is-scrolled .app-nav .nav-cta:hover,
+.app-header.landing-header.is-scrolled .nav-logout-btn:hover {
+  border-color: #0b4940;
+  background: #0b4940;
+  color: #fff;
+}
+
+.app-main:not(.app-main-landing) {
+  padding-top: calc(70px + 2rem);
 }
 
 .nf-landing {
@@ -3388,8 +3446,8 @@ html {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 610px;
-  padding: clamp(3.5rem, 6vw, 5.5rem) 0 clamp(4rem, 7vw, 6rem);
+  min-height: 660px;
+  padding: calc(70px + clamp(2.75rem, 5vw, 4.5rem)) 0 clamp(4rem, 7vw, 6rem);
   overflow: hidden;
   background: #0d3b38;
   color: #fff;
@@ -3834,6 +3892,35 @@ html {
   color: #0f2926;
   font-size: 0.92rem;
   font-weight: 700;
+}
+
+.nf-how-cta-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.25rem;
+}
+
+.nf-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 46px;
+  padding: 0.72rem 1.45rem;
+  border-radius: 10px;
+  background: #0f5f53;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgb(15 95 83 / 22%);
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.nf-whatsapp-btn:hover {
+  background: #0b4940;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 /* Experiencias Section */
