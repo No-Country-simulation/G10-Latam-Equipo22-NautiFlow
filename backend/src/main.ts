@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { RequestHandler } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { FiltroExcepcionesGlobal } from './common/filtros/filtro-excepciones-global.js';
@@ -14,7 +15,7 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
-  const helmetFn = helmet as unknown as (options?: unknown) => any;
+  const helmetFn = helmet as unknown as (options?: unknown) => RequestHandler;
   app.use(helmetFn({ contentSecurityPolicy: false }));
 
   app.setGlobalPrefix('api/v1');
