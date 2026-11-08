@@ -14,11 +14,15 @@ enum Role {
   ADMIN
   OWNER
   CLIENT
+
+  @@map("Rol")
 }
 
 enum UserStatus {
   ACTIVE
   INACTIVE
+
+  @@map("EstadoUsuario")
 }
 
 /// Estado de verificación del lanchero. Se valida con el equipo de negocio.
@@ -26,6 +30,8 @@ enum OwnerStatus {
   PENDING
   APPROVED
   REJECTED
+
+  @@map("EstadoLanchero")
 }
 
 enum DocumentType {
@@ -33,12 +39,16 @@ enum DocumentType {
   INSURANCE
   BACKGROUND_CHECK
   PHOTO
+
+  @@map("TipoDocumento")
 }
 
 enum DocumentStatus {
   PENDING
   APPROVED
   REJECTED
+
+  @@map("EstadoDocumento")
 }
 
 enum TripStatus {
@@ -47,6 +57,8 @@ enum TripStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+
+  @@map("EstadoViaje")
 }
 
 /// Estado del tramo vacío en la bolsa interna de retornos.
@@ -55,6 +67,8 @@ enum EmptyLegStatus {
   OFFERED
   ASSIGNED
   CLOSED
+
+  @@map("EstadoTramoVacio")
 }
 
 /// Estado de una salida en el catálogo público.
@@ -88,11 +102,11 @@ enum EstadoReserva {
 
 model User {
   id           String     @id @default(uuid()) @db.Uuid
-  name         String
+  name         String     @map("nombre")
   email        String     @unique
   passwordHash String
-  role         Role       @default(OWNER)
-  status       UserStatus @default(ACTIVE)
+  role         Role       @default(OWNER) @map("rol")
+  status       UserStatus @default(ACTIVE) @map("estado")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -104,17 +118,17 @@ model User {
   createdSalidas Salida[] @relation("SalidaCreatedBy")
   reviewedReservas Reserva[] @relation("ReservaReviewedBy")
 
-  @@map("users")
+  @@map("usuarios")
 }
 
 model Owner {
   id           String        @id @default(uuid()) @db.Uuid
-  userId       String        @unique @db.Uuid
+  userId       String        @unique @db.Uuid @map("usuarioId")
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone        String?
-  whatsappPhone String?
-  status       OwnerStatus   @default(PENDING)
-  reviewNote   String?
+  phone        String?       @map("telefono")
+  whatsappPhone String?      @map("whatsappTelefono")
+  status       OwnerStatus   @default(PENDING) @map("estado")
+  reviewNote   String?       @map("notaRevision")
   reviewedAt   DateTime?
   reviewedById String?       @db.Uuid
   reviewedBy   User?         @relation("OwnerReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -123,7 +137,7 @@ model Owner {
   embarcaciones Embarcacion[]
   documents OwnerDocument[]
 
-  @@map("owners")
+  @@map("lancheros")
 }
 
 /// Estado de verificación de una embarcación frente a la documentación.
@@ -185,17 +199,17 @@ model EmbarcacionZona {
 /// Documentos privados. El contenido se guarda en PostgreSQL y solo se entrega con autorización.
 model OwnerDocument {
   id           String         @id @default(uuid()) @db.Uuid
-  ownerId      String         @db.Uuid
+  ownerId      String         @db.Uuid @map("lancheroId")
   owner        Owner          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  boatId       String?        @db.Uuid
+  boatId       String?        @db.Uuid @map("embarcacionId")
   boat         Embarcacion?   @relation(fields: [boatId], references: [id], onDelete: Cascade)
-  type         DocumentType
-  status       DocumentStatus @default(PENDING)
-  filename     String
+  type         DocumentType   @map("tipo")
+  status       DocumentStatus @default(PENDING) @map("estado")
+  filename     String         @map("nombreArchivo")
   mimeType     String
   size         Int
   content      Bytes
-  reviewNote   String?
+  reviewNote   String?        @map("notaRevision")
   reviewedAt   DateTime?
   reviewedById String?        @db.Uuid
   reviewedBy   User?          @relation("DocumentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -203,7 +217,7 @@ model OwnerDocument {
 
   @@index([ownerId, type])
   @@index([boatId, type])
-  @@map("owner_documents")
+  @@map("documentos_lanchero")
 }
 
 /// Cliente de la agencia; registro de contacto sin cuenta. userId se conserva como vínculo legado.
@@ -229,11 +243,11 @@ model Trip {
   embarcacion    Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
   createdById    String     @db.Uuid
   createdBy      User       @relation("TripCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  scheduledAt    DateTime
-  passengerCount Int
-  origin         String
-  destination    String
-  status         TripStatus @default(PENDING)
+  scheduledAt    DateTime @map("fechaHora")
+  passengerCount Int      @map("cantidadPasajeros")
+  origin         String   @map("origen")
+  destination    String   @map("destino")
+  status         TripStatus @default(PENDING) @map("estado")
   salidaId       String?    @db.Uuid
   salida         Salida?    @relation(fields: [salidaId], references: [id], onDelete: SetNull)
   tramoId        String?    @db.Uuid
@@ -248,7 +262,7 @@ model Trip {
   @@index([status, scheduledAt])
   @@index([embarcacionId, scheduledAt])
   @@index([tramoId])
-  @@map("trips")
+  @@map("viajes")
 }
 
 /// Salida publicable en el catálogo de viajes.
@@ -298,45 +312,45 @@ model Tramo {
 /// Tramo de regreso sin pasajeros que nace de un viaje de ida.
 model EmptyLeg {
   id            String         @id @default(uuid()) @db.Uuid
-  tripId        String         @db.Uuid
+  tripId        String         @db.Uuid @map("viajeId")
   trip          Trip           @relation(fields: [tripId], references: [id], onDelete: Restrict)
   embarcacionId String         @db.Uuid
   embarcacion   Embarcacion    @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
-  origin        String
-  destination   String
-  scheduledAt   DateTime
-  status        EmptyLegStatus @default(AVAILABLE)
+  origin        String   @map("origen")
+  destination   String   @map("destino")
+  scheduledAt   DateTime @map("fechaHora")
+  status        EmptyLegStatus @default(AVAILABLE) @map("estado")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([status, scheduledAt])
   @@index([tripId])
-  @@map("empty_legs")
+  @@map("tramos_vacios")
 }
 
 model ReviewToken {
   id        String   @id @default(uuid()) @db.Uuid
-  tripId    String   @unique @db.Uuid
+  tripId    String   @unique @db.Uuid @map("viajeId")
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   tokenHash String   @unique
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
 
-  @@map("review_tokens")
+  @@map("tokens_resena")
 }
 
 model Review {
   id             String      @id @default(uuid()) @db.Uuid
-  tripId         String      @unique @db.Uuid
+  tripId         String      @unique @db.Uuid @map("viajeId")
   trip           Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
   embarcacionId String?     @db.Uuid
   embarcacion    Embarcacion? @relation(fields: [embarcacionId], references: [id], onDelete: SetNull)
-  rating        Int
-  comment       String?
+  rating        Int         @map("puntuacion")
+  comment       String?     @map("comentario")
   createdAt     DateTime    @default(now())
 
-  @@map("reviews")
+  @@map("resenas")
 }
 
 /// Solicitud de reserva de un tramo del catálogo, hecha por un turista sin cuenta.
