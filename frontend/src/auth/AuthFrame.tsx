@@ -25,7 +25,7 @@ export function AuthFrame({
     <main className="auth-experience">
       <aside className="auth-sidebar">
         <Link className="auth-brand" to="/">
-          <span className="auth-brand-mark" aria-hidden="true">⚓</span>
+          <img src="/favicon.ico" alt="" className="brand-logo" />
           <span>NautiFlow</span>
         </Link>
         <div className="auth-sidebar-copy">

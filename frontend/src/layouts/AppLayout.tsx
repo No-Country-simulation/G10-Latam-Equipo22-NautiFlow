@@ -1,7 +1,6 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
-  Anchor,
   Bell,
   CalendarClock,
   ClipboardList,
@@ -14,7 +13,6 @@ import {
   Search,
   Ship,
   Star,
-  Waves,
 } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
@@ -52,6 +50,15 @@ export function AppLayout() {
       navigate('/', { replace: true });
     } catch {
       setLogoutError('No se pudo cerrar la sesión. Revisá tu conexión e intentá nuevamente.');
+    }
+  }
+
+  function handleSectionScroll(sectionId: string) {
+    if (location.pathname === '/') {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   }
 
@@ -101,7 +108,7 @@ export function AppLayout() {
         <aside className="workspace-sidebar" aria-label="Menú lateral">
           <div className="workspace-brand-row">
             <Link to="/" className="workspace-brand">
-              <Waves size={22} aria-hidden="true" />
+              <img src="/favicon.ico" alt="" className="brand-logo" />
               <span>NautiFlow</span>
             </Link>
           </div>
@@ -135,11 +142,11 @@ export function AppLayout() {
           </nav>
 
           <div className="workspace-sidebar-footer">
-            <Link to={dashboardPath} className="workspace-footer-action">
+            <Link to={dashboardPath} className="workspace-nav-link workspace-footer-action">
               <RotateCcw size={16} aria-hidden="true" />
               <span>Restaurar demo</span>
             </Link>
-            <button type="button" className="workspace-footer-action" onClick={handleLogout}>
+            <button type="button" className="workspace-nav-link workspace-footer-action" onClick={handleLogout}>
               <LogOut size={16} aria-hidden="true" />
               <span>Cerrar sesión</span>
             </button>
@@ -154,9 +161,9 @@ export function AppLayout() {
             </div>
             <div className="workspace-topbar-actions">
               <span className="workspace-demo-pill">Demo</span>
-              <button type="button" className="workspace-bell-btn" aria-label="Notificaciones">
+              <Link to={dashboardPath} className="workspace-notif-btn" aria-label="Notificaciones">
                 <Bell size={16} aria-hidden="true" />
-              </button>
+              </Link>
             </div>
           </header>
 
@@ -171,40 +178,50 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <header className={`app-header${isLanding ? ' landing-header' : ''}`}>
+      <header className="app-header landing-header">
         <NavLink to="/" className="brand">
-          <img src="/favicon.ico" alt="" />
+          <img src="/favicon.ico" alt="" className="brand-logo" />
           <span>NautiFlow</span>
         </NavLink>
         <nav className="app-nav" aria-label="Navegación principal">
-          {isLanding && !user ? (
-            <>
-              <span className="nav-spacer">
-                <Link to="/#network">Explorar viajes</Link>
-                <Link to="/#how-it-works">Cómo funciona</Link>
-                <Link to="/registro/lanchero">Para lancheros</Link>
-              </span>
-              <span className="landing-header-actions">
+          <span className="nav-spacer">
+            <Link to="/#network" onClick={() => handleSectionScroll('network')}>
+              Explorar viajes
+            </Link>
+            <Link to="/#how-it-works" onClick={() => handleSectionScroll('how-it-works')}>
+              Cómo funciona
+            </Link>
+            {!user && <Link to="/registro/lanchero">Para lancheros</Link>}
+            {user && (
+              <>
+                <NavLink to={roleDashboard(user.role)}>Panel</NavLink>
+                {user.role === 'OWNER' && <NavLink to="/owner/solicitud">Mi solicitud</NavLink>}
+                {user.role === 'ADMIN' && (
+                  <>
+                    <NavLink to="/admin/solicitudes">Solicitudes</NavLink>
+                    <NavLink to="/admin/viajes">Viajes</NavLink>
+                  </>
+                )}
+              </>
+            )}
+          </span>
+          <span className="landing-header-actions">
+            {user ? (
+              <>
+                <span className="nav-user">{user.name}</span>
+                <button type="button" className="nav-cta nav-logout-btn" onClick={handleLogout}>
+                  Salir
+                </button>
+              </>
+            ) : (
+              <>
                 <Link to="/login">Ingresar</Link>
-                <Link to="/registro/cliente" className="nav-cta">Crear cuenta</Link>
-              </span>
-            </>
-          ) : user ? (
-            <>
-              <NavLink to={roleDashboard(user.role)}>Panel</NavLink>
-              {user.role === 'OWNER' && <NavLink to="/owner/solicitud">Mi solicitud</NavLink>}
-              {user.role === 'ADMIN' && (
-                <>
-                  <NavLink to="/admin/solicitudes">Solicitudes</NavLink>
-                  <NavLink to="/admin/viajes">Viajes</NavLink>
-                </>
-              )}
-              <span className="nav-user">{user.name}</span>
-              <button type="button" className="nav-cta" onClick={handleLogout}>Salir</button>
-            </>
-          ) : (
-            <NavLink to="/login" className="nav-cta">Ingresar</NavLink>
-          )}
+                <Link to="/registro/cliente" className="nav-cta">
+                  Crear cuenta
+                </Link>
+              </>
+            )}
+          </span>
         </nav>
       </header>
 
@@ -216,10 +233,13 @@ export function AppLayout() {
       <footer className={`app-footer${isLanding ? ' landing-footer' : ''}`}>
         {isLanding ? (
           <div className="landing-footer-inner">
-            <Link to="/" className="brand brand-light"><span className="brand-mark" aria-hidden="true"><Anchor size={20} /></span><span>NautiFlow<small>El Delta es uno</small></span></Link>
+            <Link to="/" className="brand brand-light">
+              <img src="/favicon.ico" alt="" className="brand-logo" />
+              <span>NautiFlow<small>El Delta es uno</small></span>
+            </Link>
             <nav aria-label="Navegación del pie de página">
-              <Link to="/#network">Explorar viajes</Link>
-              <Link to="/#how-it-works">Cómo funciona</Link>
+              <Link to="/#network" onClick={() => handleSectionScroll('network')}>Explorar viajes</Link>
+              <Link to="/#how-it-works" onClick={() => handleSectionScroll('how-it-works')}>Cómo funciona</Link>
               <Link to="/registro/lanchero">Para lancheros</Link>
             </nav>
             <div className="footer-social" aria-label="NautiFlow en redes">
@@ -229,7 +249,13 @@ export function AppLayout() {
             </div>
           </div>
         ) : (
-          <><span>NautiFlow · Delta del Tigre</span><span>MVP en construcción · NoCountry G10</span></>
+          <div className="app-footer-inner">
+            <span className="footer-brand">
+              <img src="/favicon.ico" alt="" className="brand-logo" />
+              <span>NautiFlow · Delta del Tigre</span>
+            </span>
+            <span>MVP en construcción · NoCountry G10</span>
+          </div>
         )}
       </footer>
     </div>

@@ -2735,6 +2735,105 @@ h2 {
    Workspace Shell & Role Dashboards (CLIENT, OWNER, ADMIN)
    ========================================================================== */
 
+html {
+  scroll-behavior: smooth;
+}
+
+.brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: contain;
+}
+
+.workspace-brand .brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.auth-brand .brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.landing-header .landing-header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.9rem;
+  margin-left: auto;
+}
+
+.landing-header .nav-user {
+  color: #164844;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.landing-header .nav-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 38px;
+  padding: 0.45rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: #0b625d;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.landing-header .nav-logout-btn:hover {
+  background: #07514d;
+}
+
+.app-main:not(.app-main-landing) {
+  width: min(1160px, calc(100% - 2.5rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.app-footer:not(.landing-footer) {
+  padding: 1.25rem max(1.25rem, calc((100vw - 1160px) / 2));
+  border-top: 1px solid #e0ece7;
+  background: #fff;
+  color: #566b72;
+  font-size: 0.85rem;
+}
+
+.app-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #0b514f;
+  font-weight: 700;
+}
+
+.footer-brand .brand-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
 .workspace-shell {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);

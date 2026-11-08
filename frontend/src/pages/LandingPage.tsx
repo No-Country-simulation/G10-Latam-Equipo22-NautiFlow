@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   Compass,
@@ -26,6 +26,13 @@ interface PublicBoatPage {
   data: PublicBoat[];
 }
 
+function scrollToSection(sectionId: string) {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function ActionLink({
   children,
   to,
@@ -35,8 +42,19 @@ function ActionLink({
   to: string;
   outline?: boolean;
 }) {
+  const hashIndex = to.indexOf('#');
+  const sectionId = hashIndex >= 0 ? to.slice(hashIndex + 1) : '';
+
   return (
-    <Link className={`button${outline ? ' button-ghost' : ''}`} to={to}>
+    <Link
+      className={`button${outline ? ' button-ghost' : ''}`}
+      to={to}
+      onClick={() => {
+        if (sectionId) {
+          scrollToSection(sectionId);
+        }
+      }}
+    >
       {children}
       <ArrowRight size={16} aria-hidden="true" />
     </Link>
@@ -131,6 +149,7 @@ function HowPath({
 }
 
 export function LandingPage() {
+  const location = useLocation();
   const [boats, setBoats] = useState<PublicBoat[]>([]);
   const [loadingBoats, setLoadingBoats] = useState(true);
   const [boatsError, setBoatsError] = useState(false);
@@ -141,6 +160,13 @@ export function LandingPage() {
       .catch(() => setBoatsError(true))
       .finally(() => setLoadingBoats(false));
   }, []);
+
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.slice(1);
+      requestAnimationFrame(() => scrollToSection(targetId));
+    }
+  }, [location.hash]);
 
   return (
     <div className="landing-page">
