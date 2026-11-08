@@ -1,8 +1,36 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Anchor, Compass, MessageCircle, Star } from 'lucide-react';
+import {
+  Anchor,
+  Bell,
+  CalendarClock,
+  ClipboardList,
+  Compass,
+  FileCheck2,
+  LayoutGrid,
+  LogOut,
+  MessageCircle,
+  RotateCcw,
+  Search,
+  Ship,
+  Star,
+  Waves,
+} from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
+import type { UserRole } from '../auth/auth.types';
+
+const roleSectionLabel: Record<UserRole, string> = {
+  ADMIN: 'ADMINISTRACIÓN',
+  OWNER: 'LANCHERO',
+  CLIENT: 'CLIENTE',
+};
+
+const roleCardTitle: Record<UserRole, string> = {
+  ADMIN: 'AGENCIA',
+  OWNER: 'EMBARCACIÓN',
+  CLIENT: 'PASAJERO',
+};
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -10,6 +38,12 @@ export function AppLayout() {
   const navigate = useNavigate();
   const [logoutError, setLogoutError] = useState('');
   const isLanding = location.pathname === '/';
+  const isWorkspace =
+    Boolean(user) &&
+    (location.pathname.startsWith('/admin') ||
+      location.pathname.startsWith('/owner') ||
+      location.pathname.startsWith('/client') ||
+      location.pathname.startsWith('/dashboard'));
 
   async function handleLogout() {
     setLogoutError('');
@@ -19,6 +53,120 @@ export function AppLayout() {
     } catch {
       setLogoutError('No se pudo cerrar la sesión. Revisá tu conexión e intentá nuevamente.');
     }
+  }
+
+  if (isWorkspace && user) {
+    const dashboardPath = roleDashboard(user.role);
+    const pageTitle = location.pathname.includes('solicitudes')
+      ? 'Solicitudes'
+      : location.pathname.includes('solicitud')
+      ? 'Verificación'
+      : location.pathname.includes('viajes')
+      ? 'Gestión de viajes'
+      : 'Dashboard';
+
+    const navItems =
+      user.role === 'ADMIN'
+        ? [
+            { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
+            { to: '/admin/solicitudes', label: 'Verificación', icon: FileCheck2 },
+            { to: '/admin/solicitudes#flota', label: 'Gestión de flota', icon: Ship },
+            { to: '/admin/solicitudes#solicitudes', label: 'Solicitudes', icon: ClipboardList },
+            { to: '/admin/viajes#busqueda', label: 'Búsqueda y asignación', icon: Search },
+            { to: '/admin/viajes', label: 'Gestión de viajes', icon: CalendarClock },
+            { to: '/admin/viajes#retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/estado', label: 'Reseñas', icon: Star },
+          ]
+        : user.role === 'OWNER'
+        ? [
+            { to: '/owner/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
+            { to: '/owner/solicitud', label: 'Verificación', icon: FileCheck2 },
+            { to: '/owner/solicitud#flota', label: 'Gestión de flota', icon: Ship },
+            { to: '/owner/solicitud#documentos', label: 'Solicitudes', icon: ClipboardList },
+            { to: '/owner/dashboard#viajes', label: 'Gestión de viajes', icon: CalendarClock },
+            { to: '/owner/dashboard#retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/estado', label: 'Reseñas', icon: Star },
+          ]
+        : [
+            { to: '/client/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
+            { to: '/#network', label: 'Gestión de flota', icon: Ship },
+            { to: '/#how-it-works', label: 'Solicitudes', icon: ClipboardList },
+            { to: '/client/dashboard#viajes', label: 'Gestión de viajes', icon: CalendarClock },
+            { to: '/client/dashboard#retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/estado', label: 'Reseñas', icon: Star },
+          ];
+
+    return (
+      <div className="workspace-shell">
+        <aside className="workspace-sidebar" aria-label="Menú lateral">
+          <div className="workspace-brand-row">
+            <Link to="/" className="workspace-brand">
+              <Waves size={22} aria-hidden="true" />
+              <span>NautiFlow</span>
+            </Link>
+          </div>
+
+          <div className="workspace-agency-card">
+            <span className="workspace-agency-kicker">{roleCardTitle[user.role]}</span>
+            <strong className="workspace-agency-name">
+              {user.role === 'ADMIN' ? 'Equipo NautiFlow' : user.name}
+            </strong>
+          </div>
+
+          <nav className="workspace-nav" aria-label="Navegación del panel">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isHashLink = item.to.includes('#');
+              const isActive = isHashLink
+                ? location.pathname + location.hash === item.to
+                : location.pathname === item.to && !location.hash;
+
+              return (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className={`workspace-nav-link${isActive ? ' is-active' : ''}`}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="workspace-sidebar-footer">
+            <Link to={dashboardPath} className="workspace-footer-action">
+              <RotateCcw size={16} aria-hidden="true" />
+              <span>Restaurar demo</span>
+            </Link>
+            <button type="button" className="workspace-footer-action" onClick={handleLogout}>
+              <LogOut size={16} aria-hidden="true" />
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+        </aside>
+
+        <div className="workspace-main-column">
+          <header className="workspace-topbar">
+            <div className="workspace-topbar-titles">
+              <span className="workspace-topbar-kicker">{roleSectionLabel[user.role]}</span>
+              <strong className="workspace-topbar-title">{pageTitle}</strong>
+            </div>
+            <div className="workspace-topbar-actions">
+              <span className="workspace-demo-pill">Demo</span>
+              <button type="button" className="workspace-bell-btn" aria-label="Notificaciones">
+                <Bell size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </header>
+
+          <main className="workspace-content">
+            {logoutError && <p className="form-error" role="alert">{logoutError}</p>}
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    );
   }
 
   return (
