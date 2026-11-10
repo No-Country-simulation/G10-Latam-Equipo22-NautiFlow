@@ -14,7 +14,7 @@ Tigre: flota, documentación, viajes, reputación y tramos vacíos en un solo lu
 | Base de datos | PostgreSQL 16 + Prisma 7 (driver adapter `pg`) |
 | API | REST versionada en `/api/v1` + Swagger en `/api/docs` |
 | Tests | Vitest (unitarios) + Testing Library (UI) + Supertest (e2e) |
-| Infra | Docker + Docker Compose, GitHub Actions |
+| Infra | Docker + Docker Compose, GitHub Actions, Render (backend) + Vercel (frontend) |
 
 Arquitectura: **monolito modular**. El detalle está en [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -43,8 +43,9 @@ URLs:
 ### Autenticación
 
 Los roles autenticados son `OWNER` (lanchero) y `ADMIN` (back-office). El login es común y redirige
-según el rol devuelto por la API. Las sesiones usan cookie `HttpOnly`, `SameSite=Lax` y expiración
-`JWT_EXPIRES_IN`; en producción también `Secure`. El navegador no puede leer ni persistir el JWT.
+según el rol devuelto por la API. Las sesiones usan cookie `HttpOnly` con expiración
+`JWT_EXPIRES_IN`; en desarrollo `SameSite=Lax` y en producción `SameSite=None; Secure` (necesario
+para el cruce Render ↔ Vercel). El navegador no puede leer ni persistir el JWT.
 `POST /api/v1/auth/logout` borra la cookie del navegador; un token copiado manualmente sigue válido
 hasta expirar.
 
@@ -111,6 +112,41 @@ npm run dev
 
 Ambos leen el `.env` de la raíz del repositorio.
 
+## Despliegue en producción
+
+| Servicio | Plataforma | Rama | URL |
+| --- | --- | --- | --- |
+| Backend + PostgreSQL | [Render](https://dashboard.render.com) (Blueprint `render.yaml`) | `develop` | https://nautiflow-backend.onrender.com |
+| Frontend | [Vercel](https://vercel.com) (Root Directory `frontend`) | `develop` | https://nautiflow-weld.vercel.app |
+
+Ambos proyectos apuntan a `develop`: cada merge sincroniza el Blueprint de Render (migraciones y
+seed corren en el build, ambos idempotentes) y redeployea Vercel. Al cerrar el sprint, `main` se
+actualiza desde `develop` y se cambia la rama en los paneles de Render y Vercel (los datos de la
+base no se pierden).
+
+Variables configuradas en Render (`Settings → Environment Variables`):
+
+| Variable | Valor |
+| --- | --- |
+| `CORS_ORIGIN` | `https://nautiflow-weld.vercel.app` (sin barra final) |
+| `PUBLIC_APP_URL` | `https://nautiflow-weld.vercel.app` |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | credenciales del admin (≥ 16 caracteres) |
+
+`DATABASE_URL` y `JWT_SECRET` se inyectan solos (`fromDatabase` y `generateValue`).
+
+Variables en Vercel:
+
+| Variable | Valor |
+| --- | --- |
+| `VITE_API_URL` | `https://nautiflow-backend.onrender.com/api/v1` (build time, requiere redeploy) |
+
+Notas del plan gratuito:
+
+- Render free **duerme el servicio a los 15 min sin tráfico**; la primera request tarda ~1 min en
+  despertarlo. Postgres free **expira a los 30 días** (14 de gracia, sin backups).
+- El frontend usa `frontend/vercel.json` con rewrite `/(.*) → /index.html` para que React Router
+  maneje rutas como `/login` directamente.
+
 ## Comandos útiles
 
 | Dónde | Comando | Qué hace |
@@ -131,6 +167,7 @@ Ambos leen el `.env` de la raíz del repositorio.
 ├── frontend/           React + Vite (pages, layouts, services, hooks, types)
 ├── .github/workflows/  CI (lint, build y tests en cada PR)
 ├── docker-compose.yml  PostgreSQL + backend + frontend
+├── render.yaml         Blueprint de Render (backend + PostgreSQL)
 └── docs: ROADMAP, ARCHITECTURE, DATABASE, API, BACKLOG, DECISIONS
 ```
 

@@ -22,15 +22,12 @@ actualizar reputación.
 
 ## Estado actual
 
-- **Etapa 1 completada en su base**: estructura, Docker, Prisma (User/Owner), CI, Swagger y
-  endpoint de salud integrado de punta a punta.
-- **Etapa 3 avanzada en backend**: revisión de solicitudes y documentos, viajes con asignación y
-  transiciones, catálogo público de salidas con tramos (`US-17`), reservas de tramos
-  (`US-18`: solicitud pública, confirmación con descuento de cupo y cancelación con restauración)
-  y contadores del panel (`GET /admin/dashboard/resumen`). Pendiente el frontend de `US-15` y
-  `TECH-20` (paginación de listados admin).
-- **Sprint 1 en curso**: login del lanchero (`POST /auth/login`, `GET /auth/me`) consumido desde
-  React y validado por QA.
+- **Etapas 1 a 4 completadas en su circuito**: fundaciones, usuarios/flota, operación admin y
+  reputación con reservas (`US-17`, `US-18`), catálogo público y dashboard.
+- **Etapa 5 avanzada**: backend y frontend desplegados en producción (Render + Vercel, rama
+  `develop`), CORS/cookies cross-site configurados, CI en verde y 176 tests unitarios. Pendiente
+  la demo final (E2E `QA-02`), la fusión de `main` al cerrar el sprint y `TECH-14` Fase 2
+  (nomenclatura al español, pospuesta por riesgo).
 
 ## Límites del MVP
 
