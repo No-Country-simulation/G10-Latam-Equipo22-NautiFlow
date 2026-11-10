@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /owner
+Disallow: /dashboard
+Disallow: /login
+
+Sitemap: https://nautiflow-weld.vercel.app/sitemap.xml

@@ -51,6 +51,26 @@ export function AppLayout() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const isPrivate =
+      location.pathname.startsWith('/admin') ||
+      location.pathname.startsWith('/owner') ||
+      location.pathname.startsWith('/dashboard') ||
+      location.pathname.startsWith('/login');
+
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (isPrivate) {
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'robots';
+        document.head.appendChild(meta);
+      }
+      meta.content = 'noindex, nofollow';
+    } else if (meta) {
+      meta.remove();
+    }
+  }, [location.pathname]);
+
   async function handleLogout() {
     setLogoutError('');
     try {
@@ -180,6 +200,9 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Saltar al contenido principal
+      </a>
       <header className={`app-header landing-header ${headerModeClass}`}>
         <NavLink to="/" className="brand">
           <img src="/favicon.ico" alt="" className="brand-logo" />
@@ -227,7 +250,7 @@ export function AppLayout() {
         </nav>
       </header>
 
-      <main className={`app-main${isLanding ? ' app-main-landing' : ''}`}>
+      <main id="main-content" className={`app-main${isLanding ? ' app-main-landing' : ''}`}>
         {logoutError && <p className="form-error" role="alert">{logoutError}</p>}
         <Outlet />
       </main>
@@ -244,7 +267,7 @@ export function AppLayout() {
               <Link to="/#how-it-works" onClick={() => handleSectionScroll('how-it-works')}>Cómo funciona</Link>
               <Link to="/registro/lanchero">Para lancheros</Link>
             </nav>
-            <div className="footer-social" aria-label="NautiFlow en redes">
+            <div className="footer-social" role="img" aria-label="NautiFlow en redes">
               <Compass size={17} aria-hidden="true" />
               <Star size={17} aria-hidden="true" />
               <MessageCircle size={17} aria-hidden="true" />

@@ -1,15 +1,74 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="shortcut icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="NautiFlow: gestión de lanchas, viajes y reputación para agencias de transporte privado en el Delta del Tigre."
+      content="Conectamos pasajeros y operadores fluviales del Delta del Tigre mediante embarcaciones verificadas, documentación revisada y coordinación transparente."
     />
-    <title>NautiFlow</title>
+    <title>NautiFlow | Embarcaciones verificadas en el Delta del Tigre</title>
+    <link rel="canonical" href="https://nautiflow-weld.vercel.app/" />
+    <meta name="theme-color" content="#0b6b5f" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NautiFlow" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:title" content="NautiFlow | Embarcaciones verificadas en el Delta del Tigre" />
+    <meta
+      property="og:description"
+      content="Conectamos pasajeros y operadores fluviales del Delta del Tigre mediante embarcaciones verificadas, documentación revisada y coordinación transparente."
+    />
+    <meta property="og:url" content="https://nautiflow-weld.vercel.app/" />
+    <meta property="og:image" content="https://nautiflow-weld.vercel.app/hero.jpg" />
+    <meta property="og:image:alt" content="Embarcaciones y muelle en el Delta del Tigre" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NautiFlow | Embarcaciones verificadas en el Delta del Tigre" />
+    <meta
+      name="twitter:description"
+      content="Conectamos pasajeros y operadores fluviales del Delta del Tigre mediante embarcaciones verificadas, documentación revisada y coordinación transparente."
+    />
+    <meta name="twitter:image" content="https://nautiflow-weld.vercel.app/hero.jpg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://nautiflow-weld.vercel.app/#organization",
+            "name": "NautiFlow",
+            "url": "https://nautiflow-weld.vercel.app/",
+            "description": "Plataforma que conecta pasajeros y operadores fluviales verificados en el Delta del Tigre.",
+            "areaServed": {
+              "@type": "Place",
+              "name": "Delta del Tigre, Buenos Aires, Argentina"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://nautiflow-weld.vercel.app/#website",
+            "url": "https://nautiflow-weld.vercel.app/",
+            "name": "NautiFlow",
+            "inLanguage": "es-AR",
+            "publisher": { "@id": "https://nautiflow-weld.vercel.app/#organization" }
+          },
+          {
+            "@type": "Service",
+            "name": "Coordinación de viajes fluviales verificados",
+            "description": "Embarcaciones con documentación revisada y coordinación manual de viajes en el Delta del Tigre.",
+            "provider": { "@id": "https://nautiflow-weld.vercel.app/#organization" },
+            "areaServed": {
+              "@type": "Place",
+              "name": "Delta del Tigre, Buenos Aires, Argentina"
+            },
+            "serviceType": "Transporte fluvial de pasajeros"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
