@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { ApiError, api } from '../services/api';
+import { WavyLoader } from '../components/WavyLoader';
 
 interface ReviewContext {
   trip: { origin: string; destination: string; scheduledAt: string; boatName: string | null };
@@ -39,7 +40,13 @@ export function PublicReviewPage() {
 
   if (success) return <section className="confirmation-page"><p className="eyebrow">Reseña enviada</p><h1>Gracias por compartir tu experiencia.</h1><p className="lead">Tu opinión ayuda a mantener un servicio de calidad en el Delta.</p></section>;
   if (error && !context) return <section className="confirmation-page"><p className="eyebrow">Enlace no disponible</p><h1>No pudimos abrir esta reseña.</h1><p className="form-error" role="alert">{error}</p></section>;
-  if (!context) return <p className="session-loading" role="status">Cargando viaje...</p>;
+  if (!context) {
+    return (
+      <p className="session-loading" role="status" aria-busy="true">
+        <WavyLoader label="Cargando viaje..." />
+      </p>
+    );
+  }
 
   return (
     <section className="review-page">
@@ -52,7 +59,15 @@ export function PublicReviewPage() {
         <label htmlFor="comment">Comentario, opcional</label>
         <textarea id="comment" name="comment" rows={5} maxLength={2000} />
         {error && <p className="form-error" role="alert">{error}</p>}
-        <button className="button login-submit" type="submit" disabled={submitting}>{submitting ? 'Enviando...' : 'Enviar reseña'}</button>
+        <button className="button login-submit" type="submit" disabled={submitting}>
+          {submitting ? (
+            <>
+              Enviando... <WavyLoader size="sm" />
+            </>
+          ) : (
+            'Enviar reseña'
+          )}
+        </button>
       </form>
     </section>
   );

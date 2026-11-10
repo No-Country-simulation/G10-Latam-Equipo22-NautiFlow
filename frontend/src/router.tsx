@@ -1,24 +1,79 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { DashboardRedirect } from './auth/DashboardRedirect';
-import { RoleDashboardPage } from './pages/RoleDashboardPage';
 import { AppLayout } from './layouts/AppLayout';
 import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { StatusPage } from './pages/StatusPage';
-import { OwnerRegistrationPage } from './pages/OwnerRegistrationPage';
-import { RegistrationConfirmationPage } from './pages/RegistrationConfirmationPage';
-import { OwnerRequestPage } from './pages/OwnerRequestPage';
-import { AdminRequestsPage } from './pages/AdminRequestsPage';
-import { AdminTripsPage } from './pages/AdminTripsPage';
-import { PublicReviewPage } from './pages/PublicReviewPage';
+import { Suspended } from './components/RouteFallback';
+
+const RoleDashboardPage = lazy(() =>
+  import('./pages/RoleDashboardPage').then((m) => ({ default: m.RoleDashboardPage })),
+);
+const LoginPage = lazy(() =>
+  import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+);
+const StatusPage = lazy(() =>
+  import('./pages/StatusPage').then((m) => ({ default: m.StatusPage })),
+);
+const OwnerRegistrationPage = lazy(() =>
+  import('./pages/OwnerRegistrationPage').then((m) => ({
+    default: m.OwnerRegistrationPage,
+  })),
+);
+const RegistrationConfirmationPage = lazy(() =>
+  import('./pages/RegistrationConfirmationPage').then((m) => ({
+    default: m.RegistrationConfirmationPage,
+  })),
+);
+const OwnerRequestPage = lazy(() =>
+  import('./pages/OwnerRequestPage').then((m) => ({ default: m.OwnerRequestPage })),
+);
+const AdminRequestsPage = lazy(() =>
+  import('./pages/AdminRequestsPage').then((m) => ({ default: m.AdminRequestsPage })),
+);
+const AdminTripsPage = lazy(() =>
+  import('./pages/AdminTripsPage').then((m) => ({ default: m.AdminTripsPage })),
+);
+const PublicReviewPage = lazy(() =>
+  import('./pages/PublicReviewPage').then((m) => ({ default: m.PublicReviewPage })),
+);
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/registro/lanchero', element: <OwnerRegistrationPage /> },
-  { path: '/registro/confirmacion', element: <RegistrationConfirmationPage /> },
-  { path: '/reviews/:token', element: <PublicReviewPage /> },
+  {
+    path: '/login',
+    element: (
+      <Suspended>
+        <LoginPage />
+      </Suspended>
+    ),
+  },
+  {
+    path: '/registro/lanchero',
+    element: (
+      <Suspended>
+        <OwnerRegistrationPage />
+      </Suspended>
+    ),
+  },
+  {
+    path: '/registro/confirmacion',
+    element: (
+      <Suspended>
+        <RegistrationConfirmationPage />
+      </Suspended>
+    ),
+  },
+  {
+    path: '/reviews/:token',
+    element: (
+      <Suspended>
+        <PublicReviewPage />
+      </Suspended>
+    ),
+  },
   {
     path: '/',
     element: <AppLayout />,
@@ -28,7 +83,9 @@ export const router = createBrowserRouter([
         path: 'owner/solicitud',
         element: (
           <ProtectedRoute role="OWNER">
-            <OwnerRequestPage />
+            <Suspended>
+              <OwnerRequestPage />
+            </Suspended>
           </ProtectedRoute>
         ),
       },
@@ -36,7 +93,9 @@ export const router = createBrowserRouter([
         path: 'admin/solicitudes',
         element: (
           <ProtectedRoute role="ADMIN">
-            <AdminRequestsPage />
+            <Suspended>
+              <AdminRequestsPage />
+            </Suspended>
           </ProtectedRoute>
         ),
       },
@@ -44,7 +103,9 @@ export const router = createBrowserRouter([
         path: 'admin/viajes',
         element: (
           <ProtectedRoute role="ADMIN">
-            <AdminTripsPage />
+            <Suspended>
+              <AdminTripsPage />
+            </Suspended>
           </ProtectedRoute>
         ),
       },
@@ -53,7 +114,9 @@ export const router = createBrowserRouter([
         path: 'owner/dashboard',
         element: (
           <ProtectedRoute role="OWNER">
-            <RoleDashboardPage role="OWNER" />
+            <Suspended>
+              <RoleDashboardPage role="OWNER" />
+            </Suspended>
           </ProtectedRoute>
         ),
       },
@@ -61,12 +124,28 @@ export const router = createBrowserRouter([
         path: 'admin/dashboard',
         element: (
           <ProtectedRoute role="ADMIN">
-            <RoleDashboardPage role="ADMIN" />
+            <Suspended>
+              <RoleDashboardPage role="ADMIN" />
+            </Suspended>
           </ProtectedRoute>
         ),
       },
-      { path: 'estado', element: <StatusPage /> },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        path: 'estado',
+        element: (
+          <Suspended>
+            <StatusPage />
+          </Suspended>
+        ),
+      },
+      {
+        path: '*',
+        element: (
+          <Suspended>
+            <NotFoundPage />
+          </Suspended>
+        ),
+      },
     ],
   },
 ]);
