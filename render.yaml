@@ -1,19 +1,30 @@
+databases:
+  - name: nautiflow-db
+    databaseName: nautiflow
+    user: nautiflow
+    plan: free
+
 services:
   - type: web
     name: nautiflow-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npm run build
+    branch: develop
+    # NODE_ENV=production llega al build y npm omite devDependencies;
+    # nest, prisma y tsx (seed) viven ahí, por eso --include=dev.
+    buildCommand: npm ci --include=dev && npm run build
     preDeployCommand: npm run prisma:deploy && npm run prisma:seed
     startCommand: npm run start:prod
     healthCheckPath: /api/v1/health
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nautiflow-db
+          property: connectionString
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-      - key: DATABASE_URL
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -21,4 +32,8 @@ services:
       - key: CORS_ORIGIN
         sync: false
       - key: PUBLIC_APP_URL
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
         sync: false
