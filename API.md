@@ -1,6 +1,7 @@
 # API
 
-REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:3000/api/docs`.
+REST versionada bajo `/api/v1`. Documentación interactiva: `http://localhost:3000/api/docs`
+(producción: `https://nautiflow-backend.onrender.com/api/docs`).
 
 ## Convenciones
 

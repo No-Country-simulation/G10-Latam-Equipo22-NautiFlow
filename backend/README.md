@@ -24,24 +24,24 @@ Rutas: prefijo global `/api/v1`, Swagger en `/api/docs`, salud en `/api/v1/healt
 
 ## Módulos
 
-`auth`, `users`, `owners`, `boats`, `zones`, `documents`, `verification`, `trips`, `reviews`,
-`empty-legs`, `notifications`, `health`, `common`, `prisma`, `config`.
+`auth`, `owners`, `boats`, `zones`, `documents`, `trips`, `reviews`, `empty-legs`, `salidas`,
+`reservas`, `dashboard`, `notifications`, `health`, `prisma`, `config`.
 
-Cada módulo de dominio ya está registrado en `AppModule` con su controlador y servicio como punto
-de partida. El detalle de arquitectura y convenciones está en [../ARCHITECTURE.md](../ARCHITECTURE.md).
+Cada módulo de dominio está registrado en `AppModule` con su controlador y servicio. El detalle de
+arquitectura y convenciones está en [../ARCHITECTURE.md](../ARCHITECTURE.md).
 
-## Despliegue
+## Despliegue (Render)
 
-### Vercel
-- **Root Directory**: `backend`
-- **Framework Preset**: `NestJS`
-- **Build Command**: automático (`prisma generate` + `nest build`)
-- Despliegue zero-config nativo: Vercel detecta automáticamente el framework NestJS y enruta el tráfico directamente a la aplicación sin necesidad de rewrites.
-- Las variables de entorno mínimas en Vercel son: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `PUBLIC_APP_URL` y `NODE_ENV=production`. `PORT` es opcional (fallback `3000`).
-
-### Render
-- El archivo `render.yaml` en la raíz del repositorio configura el servicio web Node.js.
-- Se ejecuta `preDeployCommand: npm run prisma:deploy && npm run prisma:seed` para aplicar migraciones e idempotencia de datos iniciales.
+- El Blueprint `render.yaml` en la raíz del repositorio crea la base PostgreSQL y el servicio web
+  Node.js, rama `develop`.
+- `buildCommand` corre `npm ci --include=dev`, el build, `prisma:deploy` y `prisma:seed` (los dos
+  últimos idempotentes). Render free no soporta `preDeployCommand`, por eso van en el build; el
+  `--include=dev` es obligatorio porque `nest`, el CLI de Prisma y `tsx` (seed) son
+  devDependencies.
+- Variables mínimas: `DATABASE_URL` (inyectada desde la base del Blueprint), `JWT_SECRET`
+  (generado), `NODE_ENV=production`, `PORT=10000`, `CORS_ORIGIN`, `PUBLIC_APP_URL`,
+  `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` (≥ 16 caracteres; si faltan, el seed omite el admin).
+- Salud en `/api/v1/health`. El plan free se duerme a los 15 min sin tráfico.
 
 ## Almacenamiento de Documentos
 - Para el MVP, la documentación de lancheros y embarcaciones se almacena en PostgreSQL en columnas `BYTEA` (`content Bytes` en Prisma).

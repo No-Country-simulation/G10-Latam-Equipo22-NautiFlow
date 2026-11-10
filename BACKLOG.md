@@ -69,8 +69,8 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | QA-04 | Pruebas de permisos por rol | Alta | qa |
 | QA-05 | Pruebas de archivos: formato, tamaño y privacidad | Media | qa |
 | QA-06 | Pruebas del token de reseña: uso único y expiración | Alta | qa |
-| TECH-09 | Deploy en Render (backend + PostgreSQL) con backups | Media | infra |
-| TECH-14 | Unificar nomenclatura español en User/Owner/Role | Baja | infra, backend |
+| TECH-09 | Deploy en Render (backend + PostgreSQL) y Vercel (frontend) — hecho en `develop`; backups no aplican en plan free | Media | infra |
+| TECH-14 | Unificar nomenclatura español en User/Owner/Role — Fase 2 hecha (roles/CLIENT); Fase 2 rutas al español pospuesta | Baja | infra, backend |
 
 ## Sprint 1 — Criterios de aceptación
 
