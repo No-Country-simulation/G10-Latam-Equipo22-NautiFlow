@@ -237,7 +237,20 @@ describe('TripsService', () => {
 	describe('list', () => {
 		it('pagina los viajes y devuelve data con meta', async () => {
 			const prisma = prismaMock();
-			prisma.trip.findMany.mockResolvedValue([{ id: 'uuid-viaje' }]);
+			prisma.trip.findMany.mockResolvedValue([
+				{
+					id: 'uuid-viaje',
+					scheduledAt,
+					passengerCount: 4,
+					origin: 'Tigre',
+					destination: 'Delta del Tigre',
+					status: TripStatus.PENDING,
+					cliente: { nombre: 'Cliente Prueba', telefono: '+5491100000000', email: null },
+					embarcacion: null,
+					review: null,
+					emptyLegs: [],
+				},
+			]);
 			prisma.trip.count.mockResolvedValue(7);
 			const { service } = createService(prisma);
 
@@ -247,7 +260,21 @@ describe('TripsService', () => {
 				expect.objectContaining({ skip: 5, take: 5, orderBy: { scheduledAt: 'desc' } }),
 			);
 			expect(result).toEqual({
-				data: [{ id: 'uuid-viaje' }],
+				data: [
+					{
+						id: 'uuid-viaje',
+						scheduledAt,
+						passengerCount: 4,
+						origin: 'Tigre',
+						destination: 'Delta del Tigre',
+						status: TripStatus.PENDING,
+						cliente: { nombre: 'Cliente Prueba', telefono: '+5491100000000', email: null },
+						embarcacion: null,
+						lanchero: null,
+						reviewId: null,
+						emptyLegId: null,
+					},
+				],
 				meta: { page: 2, limit: 5, total: 7, totalPages: 2 },
 			});
 		});

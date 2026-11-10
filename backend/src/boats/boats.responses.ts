@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { EstadoEmbarcacion } from '../generated/prisma/client.js';
+import { EstadoOperativoFlota } from './fleet-query.dto.js';
 import { PageMetaDto } from '../common/dto/page-meta.dto.js';
 import { ZonaEmbarcacionDto } from '../reviews/reviews.responses.js';
 
@@ -57,6 +58,12 @@ export class BoatSearchItemDto {
 
   @ApiProperty({ type: [ZonaEmbarcacionDto] })
   zonas: ZonaEmbarcacionDto[];
+
+  @ApiProperty({
+    enum: EstadoOperativoFlota,
+    description: 'Disponibilidad calculada a partir de viajes asignados y retornos vacíos.',
+  })
+  estadoOperativo: EstadoOperativoFlota;
 }
 
 export class PaginatedBoatsDto {

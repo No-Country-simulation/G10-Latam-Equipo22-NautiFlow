@@ -53,6 +53,21 @@ export class TripListItemDto {
     description: 'null mientras el viaje no tenga embarcación asignada.',
   })
   embarcacion: EmbarcacionViajeRefDto | null;
+
+  @ApiProperty({ type: String, nullable: true, example: 'Ana Lanchera' })
+  lanchero: string | null;
+
+  @ApiProperty({ type: String, format: 'uuid', nullable: true, example: null })
+  reviewId: string | null;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    example: null,
+    description: 'Tramo vacío activo asociado, si existe.',
+  })
+  emptyLegId: string | null;
 }
 
 export class PaginatedTripsDto {

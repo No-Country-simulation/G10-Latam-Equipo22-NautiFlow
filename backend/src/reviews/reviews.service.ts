@@ -11,6 +11,7 @@ import {
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { ListAdminReviewsQueryDto } from './list-admin-reviews-query.dto.js';
 import { PublicBoatsQueryDto } from './public-boats-query.dto.js';
 
 const EMBARCACION_ELEGIBLE: Prisma.EmbarcacionWhereInput = {
@@ -110,6 +111,120 @@ export class ReviewsService {
 				select: { id: true, rating: true, createdAt: true },
 			});
 		});
+	}
+
+	async listPendingReviewTrips(query: PaginationQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const where: Prisma.TripWhereInput = {
+			status: TripStatus.COMPLETED,
+			review: { is: null },
+		};
+		const [data, total] = await Promise.all([
+			this.prisma.trip.findMany({
+				where,
+				orderBy: { scheduledAt: 'desc' },
+				skip: (page - 1) * limit,
+				take: limit,
+				select: {
+					id: true,
+					scheduledAt: true,
+					origin: true,
+					destination: true,
+					status: true,
+					embarcacion: {
+						select: {
+							id: true,
+							nombre: true,
+							propietario: { select: { user: { select: { name: true } } } },
+						},
+					},
+					reviewToken: { select: { expiresAt: true, usedAt: true } },
+				},
+			}),
+			this.prisma.trip.count({ where }),
+		]);
+
+		return buildPaginated(
+			data.map((trip) => ({
+				id: trip.id,
+				scheduledAt: trip.scheduledAt,
+				origin: trip.origin,
+				destination: trip.destination,
+				status: trip.status,
+				embarcacion: trip.embarcacion?.nombre ?? null,
+				embarcacionId: trip.embarcacion?.id ?? null,
+				lanchero: trip.embarcacion?.propietario.user.name ?? null,
+				enlaceGenerado: Boolean(trip.reviewToken && !trip.reviewToken.usedAt),
+				enlaceVence: trip.reviewToken?.expiresAt ?? null,
+			})),
+			total,
+			page,
+			limit,
+		);
+	}
+
+	async listAdminReviews(query: ListAdminReviewsQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const where: Prisma.ReviewWhereInput = {};
+		if (query.embarcacionId) where.embarcacionId = query.embarcacionId;
+		if (query.rating) where.rating = query.rating;
+		const createdAt: Prisma.DateTimeFilter = {};
+		if (query.fechaDesde) createdAt.gte = new Date(query.fechaDesde);
+		if (query.fechaHasta) {
+			createdAt.lte = query.fechaHasta.includes('T')
+				? new Date(query.fechaHasta)
+				: new Date(new Date(query.fechaHasta).getTime() + 24 * 60 * 60 * 1000 - 1);
+		}
+		if (query.fechaDesde || query.fechaHasta) where.createdAt = createdAt;
+
+		const [data, total] = await Promise.all([
+			this.prisma.review.findMany({
+				where,
+				orderBy: { createdAt: 'desc' },
+				skip: (page - 1) * limit,
+				take: limit,
+				select: {
+					id: true,
+					rating: true,
+					comment: true,
+					createdAt: true,
+					tripId: true,
+					embarcacion: { select: { id: true, nombre: true } },
+					trip: {
+						select: {
+							scheduledAt: true,
+							origin: true,
+							destination: true,
+							embarcacion: {
+								select: { propietario: { select: { user: { select: { name: true } } } } },
+							},
+						},
+					},
+				},
+			}),
+			this.prisma.review.count({ where }),
+		]);
+
+		return buildPaginated(
+			data.map((review) => ({
+				id: review.id,
+				rating: review.rating,
+				comment: review.comment,
+				createdAt: review.createdAt,
+				tripId: review.tripId,
+				embarcacionId: review.embarcacion?.id ?? null,
+				embarcacion: review.embarcacion?.nombre ?? null,
+				lanchero: review.trip.embarcacion?.propietario.user.name ?? null,
+				viajeFecha: review.trip.scheduledAt,
+				origen: review.trip.origin,
+				destino: review.trip.destination,
+			})),
+			total,
+			page,
+			limit,
+		);
 	}
 
 	async listPublicBoats(query: PublicBoatsQueryDto) {
