@@ -173,7 +173,7 @@ export class AuthService {
 	}
 
 	private isAllowedRole(role: Role): boolean {
-		return role === Role.ADMIN || role === Role.OWNER || role === Role.CLIENT;
+		return role === Role.ADMIN || role === Role.OWNER;
 	}
 
 	private createSession(user: AuthenticatedUser): SessionResult {

@@ -6,7 +6,7 @@ import { AuthContext } from './auth-context';
 let sessionRequest: Promise<{ user: AuthUser }> | null = null;
 
 function isSupportedUser(user: AuthUser) {
-  return user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'CLIENT';
+  return user.role === 'ADMIN' || user.role === 'OWNER';
 }
 
 function getCurrentSession() {
