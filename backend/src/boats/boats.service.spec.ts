@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from './boat-schedule.service.js';
 import { BoatsService } from './boats.service.js';
+import { EstadoOperativoFlota } from './fleet-query.dto.js';
 
 const userId = 'uuid-usuario';
 const propietarioId = 'uuid-duenio';
@@ -64,6 +65,8 @@ function prismaConMocks({
       create: create ?? vi.fn(),
       update: update ?? vi.fn(),
     },
+    trip: { findMany: vi.fn().mockResolvedValue([]) },
+    emptyLeg: { findMany: vi.fn().mockResolvedValue([]) },
     zona: { findMany: zonaFindMany ?? vi.fn().mockResolvedValue([]) },
   };
 }
@@ -100,7 +103,9 @@ describe('BoatsService', () => {
 
       const result = await service.search({ page: 1, limit: 20 });
 
-      expect(result.data).toEqual([embarcacionBase]);
+      expect(result.data).toEqual([
+        { ...embarcacionBase, estadoOperativo: EstadoOperativoFlota.LIBRE },
+      ]);
       expect(result.meta).toEqual({ page: 1, limit: 20, total: 1, totalPages: 1 });
       expect(findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -138,6 +143,11 @@ describe('BoatsService', () => {
             OR: [
               { nombre: { contains: 'delta', mode: 'insensitive' } },
               { matricula: { contains: 'delta', mode: 'insensitive' } },
+              {
+                propietario: {
+                  user: { name: { contains: 'delta', mode: 'insensitive' } },
+                },
+              },
             ],
           },
           skip: 5,
