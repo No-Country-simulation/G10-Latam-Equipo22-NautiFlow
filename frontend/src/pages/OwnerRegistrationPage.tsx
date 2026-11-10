@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
 import { ApiError, api } from '../services/api';
 import { AuthFrame, ownerRegistrationSteps } from '../auth/AuthFrame';
+import { WavyLoader } from '../components/WavyLoader';
 
 interface Zone {
   id: string;
@@ -180,7 +181,7 @@ export function OwnerRegistrationPage() {
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="auth-form-actions">
           {step > 0 ? <button className="auth-secondary" type="button" onClick={() => { setError(''); setStep((current) => current - 1); }}>← Volver</button> : <Link className="auth-secondary" to="/login">Ya tengo cuenta</Link>}
-          {step < 3 ? <button className="button auth-submit" type="button" onClick={advance} disabled={step === 1 && (!zones.length || !!zonesError)}>Continuar <span aria-hidden="true">›</span></button> : <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? 'Enviando...' : 'Enviar solicitud'} <span aria-hidden="true">›</span></button>}
+          {step < 3 ? <button className="button auth-submit" type="button" onClick={advance} disabled={step === 1 && (!zones.length || !!zonesError)}>Continuar <span aria-hidden="true">›</span></button> : <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? <>Enviando... <WavyLoader size="sm" /></> : <>Enviar solicitud <span aria-hidden="true">›</span></>}</button>}
         </div>
       </form>
     </AuthFrame>

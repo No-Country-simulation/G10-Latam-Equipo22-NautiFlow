@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
 import { ApiError } from '../services/api';
 import { AuthFrame } from '../auth/AuthFrame';
+import { WavyLoader } from '../components/WavyLoader';
 
 export function LoginPage() {
   const { user, loading, login } = useAuth();
@@ -15,7 +16,13 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  if (loading) return <p className="session-loading" role="status">Verificando sesión...</p>;
+  if (loading) {
+    return (
+      <p className="session-loading" role="status" aria-busy="true">
+        <WavyLoader label="Verificando sesión..." />
+      </p>
+    );
+  }
   if (user) return <Navigate to={roleDashboard(user.role)} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -56,7 +63,15 @@ export function LoginPage() {
         </div>
         {error && <p className="form-error" role="alert">{error}</p>}
         <button className="button auth-submit" type="submit" disabled={submitting}>
-          {submitting ? 'Ingresando...' : 'Ingresar'} <span aria-hidden="true">›</span>
+          {submitting ? (
+            <>
+              Ingresando... <WavyLoader size="sm" />
+            </>
+          ) : (
+            <>
+              Ingresar <span aria-hidden="true">›</span>
+            </>
+          )}
         </button>
         <p className="auth-links">¿Querés sumar tu embarcación? <Link to="/registro/lanchero">Registrate como lanchero</Link></p>
       </form>

@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { roleDashboard } from './role-routes';
 import type { UserRole } from './auth.types';
+import { WavyLoader } from '../components/WavyLoader';
 
 export function ProtectedRoute({
   role,
@@ -14,7 +15,11 @@ export function ProtectedRoute({
   const location = useLocation();
 
   if (loading) {
-    return <p className="session-loading" role="status">Verificando sesión...</p>;
+    return (
+      <p className="session-loading" role="status" aria-busy="true">
+        <WavyLoader label="Verificando sesión..." />
+      </p>
+    );
   }
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;

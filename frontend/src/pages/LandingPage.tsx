@@ -11,6 +11,8 @@ import {
   Users,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { WavyLoader } from '../components/WavyLoader';
+import { LiquidCursorEffect } from '../components/LiquidCursorEffect';
 
 const boatImages = ['/boat1.jpg', '/boat2.jpg', '/boat3.jpg'];
 
@@ -165,7 +167,11 @@ function BoatCard({ boat, index }: { boat: PublicBoat; index: number }) {
               {operatorName ? `Op. ${operatorName}` : 'Operador verificado del Delta'}
             </p>
           </div>
-          <span className="nf-boat-rating" aria-label={`Calificación ${ratingLabel}`}>
+          <span
+            className="nf-boat-rating"
+            role="img"
+            aria-label={`Calificación ${ratingLabel}`}
+          >
             <Star size={14} fill="#f5b82e" color="#f5b82e" aria-hidden="true" />
             <strong>{ratingLabel}</strong>
           </span>
@@ -299,8 +305,12 @@ export function LandingPage() {
           className="nf-hero-bg"
           src="/hero.jpg"
           alt="Embarcaciones y muelle en el Delta del Tigre"
+          width={1000}
+          height={666}
+          fetchPriority="high"
         />
         <div className="nf-hero-overlay" />
+        <LiquidCursorEffect />
 
         <div className="nf-hero-container">
           <div className="nf-hero-content">
@@ -320,6 +330,7 @@ export function LandingPage() {
 
             <div
               className="nf-audience-grid"
+              role="group"
               aria-label="Elegí cómo participar en NautiFlow"
             >
               <AudienceCard
@@ -376,8 +387,8 @@ export function LandingPage() {
           </div>
 
           {loadingBoats ? (
-            <p className="nf-fleet-empty" role="status">
-              Cargando embarcaciones verificadas...
+            <p className="nf-fleet-empty" role="status" aria-busy="true">
+              <WavyLoader label="Cargando embarcaciones verificadas..." />
             </p>
           ) : boatsError ? (
             <p className="nf-fleet-empty" role="status">
@@ -462,6 +473,7 @@ export function LandingPage() {
               <article key={item.id} className="nf-experience-card">
                 <div
                   className="nf-experience-stars"
+                  role="img"
                   aria-label={`Calificación: ${item.rating} de 5 estrellas`}
                 >
                   {Array.from({ length: 5 }, (_, idx) => (

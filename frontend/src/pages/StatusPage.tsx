@@ -1,4 +1,5 @@
 import { useHealth } from '../hooks/useHealth';
+import { WavyLoader } from '../components/WavyLoader';
 
 const statusLabel = { ok: 'Operativo', degraded: 'Con problemas' } as const;
 const dbLabel = { up: 'Conectada', down: 'Sin conexión' } as const;
@@ -12,7 +13,11 @@ export function StatusPage() {
       <p className="lead">Chequeo en vivo de la API y su conexión con PostgreSQL.</p>
 
       <div className="card status-card" aria-live="polite">
-        {loading && <p>Consultando…</p>}
+        {loading && (
+          <p role="status" aria-busy="true">
+            <WavyLoader label="Consultando…" />
+          </p>
+        )}
 
         {!loading && error && (
           <>
