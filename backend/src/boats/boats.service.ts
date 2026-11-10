@@ -1,35 +1,11 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import {
-	EmptyLegStatus,
-	EstadoEmbarcacion,
-	OwnerStatus,
-	Prisma,
-	TripStatus,
-} from '../generated/prisma/client.js';
+import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from './boat-schedule.service.js';
 import { CreateBoatDto } from './create-boat.dto.js';
-import { EstadoOperativoFlota, type FleetQueryDto } from './fleet-query.dto.js';
 import { SearchBoatsQueryDto } from './search-boats-query.dto.js';
 import { UpdateBoatDto } from './update-boat.dto.js';
-
-const FLEET_BOAT_SELECT = {
-	id: true,
-	nombre: true,
-	matricula: true,
-	capacidad: true,
-	estado: true,
-	descripcion: true,
-	propietario: {
-		select: {
-			phone: true,
-			whatsappPhone: true,
-			user: { select: { name: true } },
-		},
-	},
-	zonas: { select: { zona: { select: { id: true, nombre: true } } } },
-} satisfies Prisma.EmbarcacionSelect;
 
 @Injectable()
 export class BoatsService {
@@ -67,7 +43,6 @@ export class BoatsService {
 			where.OR = [
 				{ nombre: { contains: q, mode: 'insensitive' } },
 				{ matricula: { contains: q, mode: 'insensitive' } },
-				{ propietario: { user: { name: { contains: q, mode: 'insensitive' } } } },
 			];
 		}
 		if (query.fechaHora) {
@@ -83,80 +58,27 @@ export class BoatsService {
 				orderBy: { nombre: 'asc' },
 				skip: (page - 1) * limit,
 				take: limit,
-				select: FLEET_BOAT_SELECT,
+				select: {
+					id: true,
+					nombre: true,
+					matricula: true,
+					capacidad: true,
+					estado: true,
+					descripcion: true,
+					propietario: {
+						select: {
+							phone: true,
+							whatsappPhone: true,
+							user: { select: { name: true } },
+						},
+					},
+					zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+				},
 			}),
 			this.prisma.embarcacion.count({ where }),
 		]);
 
-		const withStatus = await this.attachOperationalStatus(data);
-		return buildPaginated(withStatus, total, page, limit);
-	}
-
-	async listFleet(query: FleetQueryDto) {
-		const page = Number(query.page) || 1;
-		const limit = Number(query.limit) || 20;
-		const q = query.q?.trim();
-		const where: Prisma.EmbarcacionWhereInput = {
-			estado: EstadoEmbarcacion.VERIFICADA,
-			propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
-		};
-		if (query.zonaId) {
-			where.zonas = { some: { zonaId: query.zonaId } };
-		}
-		if (q) {
-			where.OR = [
-				{ nombre: { contains: q, mode: 'insensitive' } },
-				{ matricula: { contains: q, mode: 'insensitive' } },
-				{ propietario: { user: { name: { contains: q, mode: 'insensitive' } } } },
-			];
-		}
-
-		const boats = await this.prisma.embarcacion.findMany({
-			where,
-			orderBy: { nombre: 'asc' },
-			select: FLEET_BOAT_SELECT,
-		});
-		const withStatus = await this.attachOperationalStatus(boats);
-		const filtered = query.estadoOperativo
-			? withStatus.filter((boat) => boat.estadoOperativo === query.estadoOperativo)
-			: withStatus;
-		const total = filtered.length;
-		const data = filtered.slice((page - 1) * limit, page * limit);
 		return buildPaginated(data, total, page, limit);
-	}
-
-	private async attachOperationalStatus<T extends { id: string }>(boats: T[]) {
-		if (!boats.length) {
-			return boats.map((boat) => ({ ...boat, estadoOperativo: EstadoOperativoFlota.LIBRE }));
-		}
-		const ids = boats.map((boat) => boat.id);
-		const [reserved, emptyLegs] = await Promise.all([
-			this.prisma.trip.findMany({
-				where: {
-					embarcacionId: { in: ids },
-					status: { in: [TripStatus.ASSIGNED, TripStatus.CONFIRMED] },
-				},
-				select: { embarcacionId: true },
-			}),
-			this.prisma.emptyLeg.findMany({
-				where: {
-					embarcacionId: { in: ids },
-					status: { in: [EmptyLegStatus.AVAILABLE, EmptyLegStatus.OFFERED] },
-				},
-				select: { embarcacionId: true },
-			}),
-		]);
-		const reservedIds = new Set(reserved.map((row) => row.embarcacionId).filter(Boolean));
-		const emptyIds = new Set(emptyLegs.map((row) => row.embarcacionId));
-
-		return boats.map((boat) => {
-			const estadoOperativo = reservedIds.has(boat.id)
-				? EstadoOperativoFlota.RESERVADA
-				: emptyIds.has(boat.id)
-					? EstadoOperativoFlota.RETORNO_VACIO
-					: EstadoOperativoFlota.LIBRE;
-			return { ...boat, estadoOperativo };
-		});
 	}
 
 	async listMine(userId: string) {

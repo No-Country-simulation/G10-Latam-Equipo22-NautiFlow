@@ -34,7 +34,6 @@ import {
 	EmbarcacionPropiaDto,
 	PaginatedBoatsDto,
 } from './boats.responses.js';
-import { FleetQueryDto } from './fleet-query.dto.js';
 import { SearchBoatsQueryDto } from './search-boats-query.dto.js';
 import { UpdateBoatDto } from './update-boat.dto.js';
 import { BoatsService } from './boats.service.js';
@@ -55,18 +54,6 @@ export class BoatsController {
 	@ApiForbiddenResponse({ description: 'Requiere rol ADMIN.' })
 	listApproved() {
 		return this.boatsService.listApproved();
-	}
-
-	@Get('admin/fleet')
-	@UseGuards(JwtAuthGuard, RolesGuard)
-	@Roles(Role.ADMIN)
-	@ApiOperation({
-		summary: 'Flota verificada con disponibilidad operativa calculada (libre, reservada o retorno vacío)',
-	})
-	@ApiOkResponse({ type: PaginatedBoatsDto })
-	@ApiForbiddenResponse({ description: 'Requiere rol ADMIN.' })
-	listFleet(@Query() query: FleetQueryDto) {
-		return this.boatsService.listFleet(query);
 	}
 
 	@Get()
