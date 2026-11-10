@@ -13,8 +13,9 @@ services:
     branch: develop
     # NODE_ENV=production llega al build y npm omite devDependencies;
     # nest, prisma y tsx (seed) viven ahí, por eso --include=dev.
-    buildCommand: npm ci --include=dev && npm run build
-    preDeployCommand: npm run prisma:deploy && npm run prisma:seed
+    # Render free no soporta preDeployCommand: migraciones y seed
+    # van en el build (ambos son idempotentes).
+    buildCommand: npm ci --include=dev && npm run build && npm run prisma:deploy && npm run prisma:seed
     startCommand: npm run start:prod
     healthCheckPath: /api/v1/health
     envVars:
