@@ -1,6 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { EstadoEmbarcacion, OwnerStatus, Prisma, TripStatus } from '../generated/prisma/client.js';
+import {
+	EmptyLegStatus,
+	EstadoEmbarcacion,
+	OwnerStatus,
+	Prisma,
+	TripStatus,
+} from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from '../boats/boat-schedule.service.js';
@@ -21,6 +27,7 @@ export class TripsService {
 		const limit = Number(query.limit) || 20;
 		const where: Prisma.TripWhereInput = {};
 		if (query.status) where.status = query.status;
+		else if (query.statusIn?.length) where.status = { in: query.statusIn };
 
 		const q = query.q?.trim();
 		if (q) {
@@ -58,13 +65,49 @@ export class TripsService {
 					destination: true,
 					status: true,
 					cliente: { select: { nombre: true, telefono: true, email: true } },
-					embarcacion: { select: { id: true, nombre: true, matricula: true } },
+					embarcacion: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							propietario: { select: { user: { select: { name: true } } } },
+						},
+					},
+					review: { select: { id: true } },
+					emptyLegs: {
+						where: { status: { not: EmptyLegStatus.CLOSED } },
+						select: { id: true },
+						take: 1,
+					},
 				},
 			}),
 			this.prisma.trip.count({ where }),
 		]);
 
-		return buildPaginated(data, total, page, limit);
+		return buildPaginated(
+			data.map((trip) => ({
+				id: trip.id,
+				scheduledAt: trip.scheduledAt,
+				passengerCount: trip.passengerCount,
+				origin: trip.origin,
+				destination: trip.destination,
+				status: trip.status,
+				cliente: trip.cliente,
+				embarcacion: trip.embarcacion
+					? {
+							id: trip.embarcacion.id,
+							nombre: trip.embarcacion.nombre,
+							matricula: trip.embarcacion.matricula,
+						}
+					: null,
+				lanchero: trip.embarcacion?.propietario.user.name ?? null,
+				reviewId: trip.review?.id ?? null,
+				emptyLegId: trip.emptyLegs[0]?.id ?? null,
+			})),
+			total,
+			page,
+			limit,
+		);
 	}
 
 	async create(dto: CreateTripDto, adminId: string) {
