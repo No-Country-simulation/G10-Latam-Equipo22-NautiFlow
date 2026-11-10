@@ -21,13 +21,11 @@ import type { UserRole } from '../auth/auth.types';
 const roleSectionLabel: Record<UserRole, string> = {
   ADMIN: 'ADMINISTRACIÓN',
   OWNER: 'LANCHERO',
-  CLIENT: 'CLIENTE',
 };
 
 const roleCardTitle: Record<UserRole, string> = {
   ADMIN: 'AGENCIA',
   OWNER: 'EMBARCACIÓN',
-  CLIENT: 'PASAJERO',
 };
 
 export function AppLayout() {
@@ -41,7 +39,6 @@ export function AppLayout() {
     Boolean(user) &&
     (location.pathname.startsWith('/admin') ||
       location.pathname.startsWith('/owner') ||
-      location.pathname.startsWith('/client') ||
       location.pathname.startsWith('/dashboard'));
 
   useEffect(() => {
@@ -95,22 +92,13 @@ export function AppLayout() {
             { to: '/admin/viajes#retornos', label: 'Retornos vacíos', icon: RotateCcw },
             { to: '/estado', label: 'Reseñas', icon: Star },
           ]
-        : user.role === 'OWNER'
-        ? [
+        : [
             { to: '/owner/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
             { to: '/owner/solicitud', label: 'Verificación', icon: FileCheck2 },
             { to: '/owner/solicitud#flota', label: 'Gestión de flota', icon: Ship },
             { to: '/owner/solicitud#documentos', label: 'Solicitudes', icon: ClipboardList },
             { to: '/owner/dashboard#viajes', label: 'Gestión de viajes', icon: CalendarClock },
             { to: '/owner/dashboard#retornos', label: 'Retornos vacíos', icon: RotateCcw },
-            { to: '/estado', label: 'Reseñas', icon: Star },
-          ]
-        : [
-            { to: '/client/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
-            { to: '/#network', label: 'Gestión de flota', icon: Ship },
-            { to: '/#how-it-works', label: 'Solicitudes', icon: ClipboardList },
-            { to: '/client/dashboard#viajes', label: 'Gestión de viajes', icon: CalendarClock },
-            { to: '/client/dashboard#retornos', label: 'Retornos vacíos', icon: RotateCcw },
             { to: '/estado', label: 'Reseñas', icon: Star },
           ];
 
@@ -230,7 +218,7 @@ export function AppLayout() {
             ) : (
               <>
                 <Link to="/login">Ingresar</Link>
-                <Link to="/registro/cliente" className="nav-cta">
+                <Link to="/registro/lanchero" className="nav-cta">
                   Crear cuenta
                 </Link>
               </>

@@ -139,21 +139,16 @@ describe('AuthService', () => {
     }
   });
 
-  it('permite el inicio de sesión y validación de tokens de cuentas de cliente', async () => {
+  it('rechaza el inicio de sesión de cuentas de cliente (D-011)', async () => {
     const { service, findUnique } = createService();
     findUnique.mockResolvedValue({
       ...activeClient,
       passwordHash: await bcrypt.hash('correct-horse-battery', 4),
     } as never);
 
-    const session = await service.login({ email: activeClient.email, password: 'correct-horse-battery' });
-    expect(session.user).toMatchObject({ id: 'client-id', role: Role.CLIENT, ownerStatus: null });
-
-    findUnique.mockResolvedValue(activeClient as never);
-    await expect(service.authenticateToken(session.token)).resolves.toMatchObject({
-      id: 'client-id',
-      role: Role.CLIENT,
-    });
+    await expect(
+      service.login({ email: activeClient.email, password: 'correct-horse-battery' }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });
 

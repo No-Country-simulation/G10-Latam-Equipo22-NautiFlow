@@ -14,8 +14,6 @@ import { ReservasModule } from './reservas/reservas.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { SalidasModule } from './salidas/salidas.module.js';
 import { TripsModule } from './trips/trips.module.js';
-import { UsersModule } from './users/users.module.js';
-import { VerificationModule } from './verification/verification.module.js';
 import { ZonesModule } from './zones/zones.module.js';
 
 @Module({
@@ -28,12 +26,10 @@ import { ZonesModule } from './zones/zones.module.js';
     PrismaModule,
     HealthModule,
     AuthModule,
-    UsersModule,
     OwnersModule,
     BoatsModule,
     ZonesModule,
     DocumentsModule,
-    VerificationModule,
     TripsModule,
     ReviewsModule,
     EmptyLegsModule,
