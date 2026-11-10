@@ -91,59 +91,10 @@ export class OwnersService {
 		return this.getMyRequest(userId);
 	}
 
-	private readonly requestSelect = {
-		id: true,
-		status: true,
-		reviewNote: true,
-		phone: true,
-		whatsappPhone: true,
-		createdAt: true,
-		reviewedAt: true,
-		user: { select: { id: true, name: true, email: true, status: true } },
-		embarcaciones: {
-			select: {
-				id: true,
-				nombre: true,
-				matricula: true,
-				capacidad: true,
-				estado: true,
-				zonas: { select: { zona: { select: { id: true, nombre: true } } } },
-			},
-		},
-		documents: {
-			select: {
-				id: true,
-				type: true,
-				status: true,
-				filename: true,
-				mimeType: true,
-				size: true,
-				reviewNote: true,
-				createdAt: true,
-			},
-		},
-	} satisfies Prisma.OwnerSelect;
-
-	async getRequest(id: string) {
-		const owner = await this.prisma.owner.findUnique({
-			where: { id },
-			select: this.requestSelect,
-		});
-		if (!owner) throw new NotFoundException('No se encontró la solicitud.');
-		return owner;
-	}
-
 	async listRequests(query: ListSolicitudesQueryDto) {
 		const page = Number(query.page) || 1;
 		const limit = Number(query.limit) || 20;
-		const q = query.q?.trim();
 		const where: Prisma.OwnerWhereInput = query.status ? { status: query.status } : {};
-		if (q) {
-			where.OR = [
-				{ user: { name: { contains: q, mode: 'insensitive' } } },
-				{ user: { email: { contains: q, mode: 'insensitive' } } },
-			];
-		}
 
 		const [data, total] = await Promise.all([
 			this.prisma.owner.findMany({
@@ -151,7 +102,26 @@ export class OwnersService {
 				orderBy: { createdAt: 'asc' },
 				skip: (page - 1) * limit,
 				take: limit,
-				select: this.requestSelect,
+				select: {
+					id: true,
+					status: true,
+					reviewNote: true,
+					createdAt: true,
+					user: { select: { id: true, name: true, email: true, status: true } },
+					embarcaciones: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							capacidad: true,
+							estado: true,
+							zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+						},
+					},
+					documents: {
+						select: { id: true, type: true, status: true, filename: true, reviewNote: true, createdAt: true },
+					},
+				},
 			}),
 			this.prisma.owner.count({ where }),
 		]);

@@ -58,12 +58,6 @@ export class DocumentoSolicitudDto {
   @ApiProperty({ example: 'licencia.pdf' })
   filename: string;
 
-  @ApiProperty({ example: 'application/pdf' })
-  mimeType: string;
-
-  @ApiProperty({ example: 102400 })
-  size: number;
-
   @ApiProperty({ type: String, nullable: true, example: null })
   reviewNote: string | null;
 
@@ -113,17 +107,8 @@ export class SolicitudListItemDto {
   @ApiProperty({ type: String, nullable: true, example: null })
   reviewNote: string | null;
 
-  @ApiProperty({ type: String, nullable: true, example: '+5491155550000' })
-  phone: string | null;
-
-  @ApiProperty({ type: String, nullable: true, example: '+5491155550001' })
-  whatsappPhone: string | null;
-
   @ApiProperty({ example: '2026-10-15T12:00:00.000Z' })
   createdAt: Date;
-
-  @ApiProperty({ type: String, nullable: true, example: null })
-  reviewedAt: Date | null;
 
   @ApiProperty({ type: UsuarioSolicitudListDto })
   user: UsuarioSolicitudListDto;

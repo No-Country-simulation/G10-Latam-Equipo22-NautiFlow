@@ -16,7 +16,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
 import { OwnersService } from './owners.service.js';
 import { ListSolicitudesQueryDto } from './list-solicitudes-query.dto.js';
-import { OwnerRecordDto, PaginatedSolicitudesDto, SolicitudListItemDto } from './owners.responses.js';
+import { OwnerRecordDto, PaginatedSolicitudesDto } from './owners.responses.js';
 import { ReviewRequestDto } from './review-request.dto.js';
 
 @ApiTags('admin-solicitudes')
@@ -34,14 +34,6 @@ export class VerificationController {
 	@ApiOkResponse({ type: PaginatedSolicitudesDto })
 	list(@Query() query: ListSolicitudesQueryDto) {
 		return this.ownersService.listRequests(query);
-	}
-
-	@Get(':id')
-	@ApiOperation({ summary: 'Detalle de una solicitud de lanchero' })
-	@ApiOkResponse({ type: SolicitudListItemDto })
-	@ApiNotFoundResponse({ description: 'Solicitud inexistente.' })
-	getOne(@Param('id', ParseUUIDPipe) id: string) {
-		return this.ownersService.getRequest(id);
 	}
 
 	@Patch(':id/aprobar')
