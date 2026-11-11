@@ -1406,7 +1406,8 @@ h2 {
     white-space: nowrap;
   }
 
-  .landing-header .app-nav .nav-cta {
+  .landing-header .app-nav .nav-cta,
+  .landing-header .nav-dropdown-trigger {
     padding: 0.5rem 0.7rem;
     border-radius: 9px;
   }
@@ -1477,6 +1478,154 @@ html {
 
 .landing-header .nav-logout-btn:hover {
   background: #07514d;
+}
+
+.landing-header .nav-dropdown-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.landing-header .nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0.45rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: #0b625d;
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.landing-header .nav-dropdown-trigger:hover,
+.landing-header .nav-dropdown-trigger[aria-expanded="true"] {
+  background: #07514d;
+}
+
+.landing-header .nav-dropdown-chevron {
+  transition: transform 180ms ease;
+}
+
+.landing-header .nav-dropdown-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.landing-header .nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  padding: 0.35rem;
+  background: #ffffff;
+  border: 1px solid #d8e5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(11, 81, 79, 0.16), 0 8px 10px -6px rgba(11, 81, 79, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  z-index: 1000;
+  animation: navDropdownFade 150ms ease-out;
+}
+
+@keyframes navDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-header .nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #164844 !important;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 550;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 120ms ease, color 120ms ease;
+  box-sizing: border-box;
+}
+
+.landing-header .nav-dropdown-item span {
+  color: #164844 !important;
+  font-weight: 550;
+  transition: color 120ms ease;
+}
+
+.landing-header .nav-dropdown-item svg {
+  color: #0b625d;
+  flex-shrink: 0;
+  transition: color 120ms ease;
+}
+
+.landing-header .nav-dropdown-item:hover,
+.landing-header .nav-dropdown-item:focus-visible {
+  background: #eff7f5;
+  color: #074a46 !important;
+  outline: none;
+}
+
+.landing-header .nav-dropdown-item:hover span,
+.landing-header .nav-dropdown-item:focus-visible span {
+  color: #074a46 !important;
+}
+
+.landing-header .nav-dropdown-item:hover svg,
+.landing-header .nav-dropdown-item:focus-visible svg {
+  color: #074a46;
+}
+
+.landing-header .nav-dropdown-item-logout {
+  color: #c53030 !important;
+  border-top: 1px solid #f0f4f3;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+  border-radius: 0 0 8px 8px;
+}
+
+.landing-header .nav-dropdown-item-logout span {
+  color: #c53030 !important;
+}
+
+.landing-header .nav-dropdown-item-logout svg {
+  color: #c53030;
+}
+
+.landing-header .nav-dropdown-item-logout:hover,
+.landing-header .nav-dropdown-item-logout:focus-visible {
+  background: #fff5f5;
+  color: #9b2c2c !important;
+}
+
+.landing-header .nav-dropdown-item-logout:hover span,
+.landing-header .nav-dropdown-item-logout:focus-visible span {
+  color: #9b2c2c !important;
+}
+
+.landing-header .nav-dropdown-item-logout:hover svg,
+.landing-header .nav-dropdown-item-logout:focus-visible svg {
+  color: #9b2c2c;
 }
 
 .app-main:not(.app-main-landing) {
@@ -2013,6 +2162,1369 @@ html {
 }
 
 /* ==========================================================================
+   Admin Panel Design System & Modules (NautiFlow Back-Office)
+   ========================================================================== */
+
+/* Botones universales consistentes */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.62rem 1.15rem;
+  border: 1px solid #145a52;
+  border-radius: 9px;
+  background: #145a52;
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 140ms ease;
+  line-height: 1.25;
+}
+
+.button:hover:not(:disabled) {
+  background: #0f4a42;
+  border-color: #0f4a42;
+  color: #fff;
+}
+
+.button.btn-sm {
+  padding: 0.42rem 0.85rem;
+  font-size: 0.78rem;
+  border-radius: 7px;
+}
+
+.button-ghost {
+  border-color: #d8e4e0;
+  background: #fff;
+  color: #0f2926;
+}
+
+.button-ghost:hover:not(:disabled) {
+  background: #f6faf9;
+  border-color: #bfd1cc;
+  color: #0f2926;
+}
+
+.button-danger {
+  border-color: #a3312b;
+  background: #a3312b;
+  color: #fff;
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color: #7e211c;
+  background: #7e211c;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Alertas de acción */
+.nf-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.nf-alert-error {
+  border: 1px solid #f8c9c6;
+  background: #fdf2f1;
+  color: #a3312b;
+}
+
+.nf-alert-success {
+  border: 1px solid #c2e8df;
+  background: #edf8f5;
+  color: #0c564c;
+}
+
+/* Contenedor y Encabezados de Módulos Admin */
+.admin-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.admin-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #147867;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-header-row h1 {
+  margin: 0;
+  color: #0f2926;
+  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.admin-subtitle {
+  margin: 0.35rem 0 0;
+  color: #617470;
+  font-size: 0.88rem;
+  max-width: 800px;
+}
+
+/* Barra de Filtros y Búsqueda */
+.admin-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #e2ebe8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 41 38 / 3%);
+}
+
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #4a5e5a;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.filter-tab:hover {
+  background: #f0f6f4;
+  color: #0f2926;
+}
+
+.filter-tab.is-active {
+  background: #e3f3ee;
+  color: #0c564c;
+  border-color: #c0e6dc;
+}
+
+.filters-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.zone-select-filter {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #dce6e3;
+  border-radius: 8px;
+  background: #fff;
+  color: #10262d;
+  font: inherit;
+  font-size: 0.82rem;
+  min-height: 38px;
+}
+
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 240px;
+}
+
+.search-input-wrap .search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: #7b908c;
+  pointer-events: none;
+}
+
+.search-input-wrap input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.45rem 0.75rem 0.45rem 2.2rem;
+  border: 1px solid #dce6e3;
+  border-radius: 8px;
+  background: #fff;
+  color: #10262d;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.search-input-wrap input:focus-visible,
+.zone-select-filter:focus-visible {
+  outline: 2px solid #36b39c;
+  border-color: #36b39c;
+}
+
+/* Estados Vacíos y de Carga */
+.admin-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  border: 1px dashed #dce6e3;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.admin-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed #dce6e3;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.admin-empty-card .empty-icon {
+  color: #8da49f;
+  margin-bottom: 0.75rem;
+}
+
+.admin-empty-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #0f2926;
+}
+
+.admin-empty-card p {
+  margin: 0.35rem 0 0;
+  color: #617470;
+  font-size: 0.86rem;
+  max-width: 440px;
+}
+
+/* Badges y Pills de Estado */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.status-pill.status-pending {
+  background: #fff3d6;
+  color: #925c00;
+  border: 1px solid #f6deb3;
+}
+
+.status-pill.status-approved,
+.status-pill.status-confirmed,
+.status-pill.status-completed {
+  background: #dff5ee;
+  color: #0a5b4f;
+  border: 1px solid #bcead9;
+}
+
+.status-pill.status-assigned {
+  background: #e2f0fb;
+  color: #0f528a;
+  border: 1px solid #bcdbf3;
+}
+
+.status-pill.status-rejected,
+.status-pill.status-cancelled {
+  background: #fde8e7;
+  color: #9b2823;
+  border: 1px solid #f6c8c6;
+}
+
+/* Estados Operativos de la Flota */
+.operational-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.operational-libre {
+  background: #e1f7ef;
+  color: #0a6356;
+  border: 1px solid #b6ecd9;
+}
+
+.operational-reservada {
+  background: #fef0db;
+  color: #945806;
+  border: 1px solid #f9dab3;
+}
+
+.operational-retorno {
+  background: #e1f0fe;
+  color: #0f5898;
+  border: 1px solid #b6daf9;
+}
+
+.verified-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #0e6c5d;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+/* Módulo: Verificación Grid & Cards */
+.verification-grid,
+.fleet-grid,
+.trips-grid,
+.empty-legs-grid,
+.reviews-grid,
+.pending-reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.15rem;
+}
+
+.verification-card,
+.fleet-boat-card,
+.owner-request-card,
+.trip-card,
+.empty-leg-card,
+.review-card,
+.pending-review-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  background: #fff;
+  padding: 1.25rem;
+  box-shadow: 0 2px 6px rgb(15 41 38 / 3%);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.verification-card:hover,
+.fleet-boat-card:hover,
+.trip-card:hover {
+  box-shadow: 0 6px 16px rgb(15 41 38 / 6%);
+}
+
+.verification-card-header,
+.fleet-boat-top,
+.trip-card-header,
+.empty-leg-top,
+.review-card-top,
+.pending-review-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.owner-avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-circle {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e3f3ee;
+  color: #147867;
+}
+
+.owner-title-name,
+.fleet-boat-name {
+  display: block;
+  color: #0f2926;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.owner-email-text,
+.boat-plate {
+  display: block;
+  color: #617470;
+  font-size: 0.78rem;
+}
+
+.boat-summary-box {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e8f0ed;
+  border-radius: 10px;
+  background: #f7faf9;
+  margin-bottom: 0.85rem;
+}
+
+.boat-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.boat-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: #4a5e5a;
+}
+
+/* Documentos Checklist */
+.docs-checklist-title {
+  display: block;
+  color: #3f524e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+}
+
+.docs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.doc-check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 7px;
+  background: #f8fbfa;
+  font-size: 0.78rem;
+}
+
+.doc-check-info {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.doc-action-links {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.doc-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #147867;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.doc-link-btn:hover {
+  text-decoration: underline;
+}
+
+.doc-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.doc-badge-approved {
+  background: #dff5ee;
+  color: #0a5b4f;
+}
+
+.doc-badge-rejected {
+  background: #fde8e7;
+  color: #9b2823;
+}
+
+.doc-badge-pending {
+  background: #fff3d6;
+  color: #925c00;
+}
+
+.doc-badge-missing {
+  background: #eceff0;
+  color: #7b8e92;
+}
+
+.admin-note-preview {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+  color: #8c5400;
+  font-size: 0.76rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.verification-card-footer,
+.fleet-boat-footer,
+.trip-card-footer,
+.empty-leg-footer,
+.pending-review-footer {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef3f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.btn-view-full {
+  width: 100%;
+}
+
+/* Módulo: Gestión de Flota */
+.fleet-boat-details {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+  font-size: 0.82rem;
+}
+
+.fleet-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: #4a5e5a;
+}
+
+.fleet-meta-item .meta-icon {
+  color: #147867;
+  flex: 0 0 16px;
+  margin-top: 2px;
+}
+
+.whatsapp-inline-link {
+  display: block;
+  color: #0b6b5f;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-decoration: none;
+  margin-top: 0.15rem;
+}
+
+.whatsapp-inline-link:hover {
+  text-decoration: underline;
+}
+
+/* Módulo: Solicitudes por Lanchero */
+.requests-per-owner-list {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.owner-request-card {
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  background: #fff;
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 2px 6px rgb(15 41 38 / 3%);
+}
+
+.owner-request-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #eef3f1;
+}
+
+.owner-profile-brief {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.owner-name-title {
+  display: block;
+  color: #0f2926;
+  font-size: 1.1rem;
+}
+
+.owner-email-sub {
+  display: block;
+  color: #617470;
+  font-size: 0.82rem;
+}
+
+.owner-date-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #8da49f;
+  font-size: 0.74rem;
+  margin-top: 0.2rem;
+}
+
+.owner-request-status-side {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.owner-boat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0.85rem 0;
+}
+
+.boat-tag {
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  background: #eef4f2;
+  color: #0f2926;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.boat-meta-tag {
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  background: #f7faf9;
+  color: #556c67;
+  font-size: 0.78rem;
+  border: 1px solid #e2ebe8;
+}
+
+.owner-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.owner-doc-card {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e8f0ed;
+  border-radius: 9px;
+  background: #f8fbfa;
+}
+
+.owner-doc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #0f2926;
+  font-size: 0.82rem;
+  margin-bottom: 0.35rem;
+}
+
+.owner-doc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.owner-doc-file {
+  font-size: 0.72rem;
+  color: #617470;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-doc-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Módulo: Búsqueda Avanzada de Lanchas */
+.admin-search-box {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #e2ebe8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(15 41 38 / 3%);
+}
+
+.search-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-group label {
+  color: #3f524e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  min-height: 40px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #dce6e3;
+  border-radius: 8px;
+  background: #fff;
+  color: #10262d;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.form-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* Módulo: Viajes Card & Banners */
+.trip-route-title .route-text {
+  display: block;
+  font-size: 1.05rem;
+  color: #0f2926;
+}
+
+.trip-date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #617470;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.trip-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #4a5e5a;
+  margin-bottom: 0.75rem;
+}
+
+.assigned-boat-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #eef8f5;
+  border: 1px solid #c9ecdf;
+  color: #0b6053;
+  font-size: 0.82rem;
+}
+
+.unassigned-boat-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #fff8eb;
+  border: 1px solid #fae2b8;
+  color: #925c00;
+  font-size: 0.82rem;
+}
+
+.assign-select-inline {
+  width: 100%;
+  min-height: 34px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #e0c896;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.review-link-box {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: #f7faf9;
+  border: 1px dashed #c0e6dc;
+}
+
+.review-link-label {
+  display: block;
+  color: #147867;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.review-link-row,
+.generated-link-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.review-link-input {
+  flex: 1;
+  min-height: 32px;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #dce6e3;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  background: #fff;
+}
+
+.trip-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Módulo: Retornos Vacíos */
+.empty-leg-route {
+  display: block;
+  font-size: 1rem;
+  color: #0f2926;
+}
+
+.empty-leg-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #617470;
+  font-size: 0.78rem;
+}
+
+.whatsapp-preview-box {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.whatsapp-preview-title {
+  display: block;
+  color: #166534;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.whatsapp-text-preview {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #14532d;
+  line-height: 1.35;
+  font-style: italic;
+}
+
+.empty-leg-state-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Módulo: Reseñas */
+.star-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.star-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.star-filled {
+  color: #f59e0b;
+}
+
+.star-empty {
+  color: #d1d5db;
+}
+
+.star-rating-val {
+  margin-left: 0.35rem;
+  font-size: 0.9rem;
+  color: #0f2926;
+}
+
+.review-boat-name {
+  color: #4a5e5a;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.review-date-pill {
+  color: #8da49f;
+  font-size: 0.75rem;
+}
+
+.review-comment-text {
+  margin: 0.5rem 0 0.75rem;
+  color: #1f3a35;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.review-trip-context {
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  background: #f6faf9;
+  border: 1px solid #e5eeec;
+  font-size: 0.74rem;
+  color: #556c67;
+}
+
+.review-context-title {
+  display: block;
+  font-weight: 700;
+  color: #147867;
+}
+
+.pending-route-text {
+  display: block;
+  font-size: 0.98rem;
+  color: #0f2926;
+}
+
+.pending-date-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #617470;
+  font-size: 0.76rem;
+}
+
+.pending-details-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #4a5e5a;
+  margin: 0.65rem 0;
+}
+
+.generated-link-box {
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #f7faf9;
+  border: 1px solid #dce6e3;
+  margin-top: 0.5rem;
+}
+
+.generated-link-label {
+  display: block;
+  color: #147867;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+/* Modales y Drawers */
+.nf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(15 41 38 / 55%);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.nf-modal-box {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 22%);
+  overflow: hidden;
+  animation: modal-pop 160ms ease-out;
+}
+
+@keyframes modal-pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.nf-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #eef3f1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #fbfdfc;
+}
+
+.nf-modal-header h2 {
+  margin: 0;
+  color: #0f2926;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.nf-modal-subtitle {
+  color: #617470;
+  font-size: 0.82rem;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: 0;
+  font-size: 1.25rem;
+  color: #617470;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.modal-close-btn:hover {
+  background: #eef3f1;
+  color: #0f2926;
+}
+
+.nf-modal-content {
+  padding: 1.35rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.modal-section-card {
+  padding: 1rem 1.15rem;
+  border: 1px solid #e8f0ed;
+  border-radius: 12px;
+  background: #fbfdfc;
+}
+
+.modal-section-card h3 {
+  margin: 0 0 0.5rem;
+  color: #0f2926;
+  font-size: 0.98rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.modal-hint {
+  margin: 0 0 0.75rem;
+  color: #617470;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.modal-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.data-label {
+  display: block;
+  font-size: 0.74rem;
+  color: #617470;
+}
+
+.modal-docs-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.doc-review-card {
+  padding: 0.85rem;
+  border: 1px solid #e2ebe8;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.doc-review-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.doc-filename {
+  display: block;
+  color: #617470;
+  font-size: 0.74rem;
+}
+
+.doc-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.doc-review-form {
+  margin-top: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.doc-note-input {
+  flex: 1;
+  min-width: 200px;
+  min-height: 32px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #dce6e3;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.doc-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.doc-saved-note {
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  color: #4a5e5a;
+  padding: 0.35rem 0.55rem;
+  background: #f7faf9;
+  border-radius: 5px;
+}
+
+.final-decision-card {
+  background: #f4faf8;
+  border-color: #c2e8df;
+}
+
+.final-note-label span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f2926;
+  margin-bottom: 0.35rem;
+}
+
+.final-note-label textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dce6e3;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.form-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.status-callout-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.boat-trips-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.boat-trip-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  border: 1px solid #eef3f1;
+  border-radius: 7px;
+  font-size: 0.8rem;
+}
+
+.boat-trip-meta {
+  display: block;
+  color: #617470;
+  font-size: 0.74rem;
+}
+
+/* Dashboard Actividad Reciente Feed */
+.nf-recent-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.nf-panel-desc {
+  display: block;
+  color: #617470;
+  font-size: 0.74rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+.recent-activity-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.recent-event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #f0f5f3;
+}
+
+.recent-event-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.event-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #147867;
+  flex: 0 0 8px;
+  margin-top: 6px;
+}
+
+.event-content {
+  flex: 1;
+}
+
+.event-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.event-title {
+  color: #0f2926;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.event-time {
+  color: #8da49f;
+  font-size: 0.72rem;
+}
+
+.event-desc {
+  margin: 0.15rem 0 0;
+  color: #556c67;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.empty-activity-text {
+  color: #8da49f;
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.chart-count-bubble {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #e3f3ee;
+  color: #0c564c;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.nf-kpi-subtext {
+  display: block;
+  margin-top: 0.25rem;
+  color: #617470;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+/* ==========================================================================
    Rediseño de Landing Page, Navbar y Footer (Referencia NautiFlow)
    ========================================================================== */
 
@@ -2039,13 +3551,13 @@ html {
   color: #fff;
 }
 
-.app-header.landing-header.is-transparent .app-nav a {
+.app-header.landing-header.is-transparent .app-nav a:not(.nav-dropdown-item) {
   color: rgb(255 255 255 / 88%);
   font-weight: 500;
   transition: color 140ms ease;
 }
 
-.app-header.landing-header.is-transparent .app-nav a:hover {
+.app-header.landing-header.is-transparent .app-nav a:not(.nav-dropdown-item):hover {
   color: #fff;
 }
 
@@ -2054,7 +3566,8 @@ html {
 }
 
 .app-header.landing-header.is-transparent .app-nav .nav-cta,
-.app-header.landing-header.is-transparent .nav-logout-btn {
+.app-header.landing-header.is-transparent .nav-logout-btn,
+.app-header.landing-header.is-transparent .nav-dropdown-trigger {
   border: 1px solid rgb(255 255 255 / 24%);
   border-radius: 9px;
   background: rgb(255 255 255 / 16%);
@@ -2064,7 +3577,9 @@ html {
 }
 
 .app-header.landing-header.is-transparent .app-nav .nav-cta:hover,
-.app-header.landing-header.is-transparent .nav-logout-btn:hover {
+.app-header.landing-header.is-transparent .nav-logout-btn:hover,
+.app-header.landing-header.is-transparent .nav-dropdown-trigger:hover,
+.app-header.landing-header.is-transparent .nav-dropdown-trigger[aria-expanded="true"] {
   border-color: rgb(255 255 255 / 42%);
   background: rgb(255 255 255 / 26%);
   color: #fff;
@@ -2082,13 +3597,13 @@ html {
   color: #0b514f;
 }
 
-.app-header.landing-header.is-scrolled .app-nav a {
+.app-header.landing-header.is-scrolled .app-nav a:not(.nav-dropdown-item) {
   color: #355f5b;
   font-weight: 500;
   transition: color 140ms ease;
 }
 
-.app-header.landing-header.is-scrolled .app-nav a:hover {
+.app-header.landing-header.is-scrolled .app-nav a:not(.nav-dropdown-item):hover {
   color: #0b514f;
 }
 
@@ -2097,7 +3612,8 @@ html {
 }
 
 .app-header.landing-header.is-scrolled .app-nav .nav-cta,
-.app-header.landing-header.is-scrolled .nav-logout-btn {
+.app-header.landing-header.is-scrolled .nav-logout-btn,
+.app-header.landing-header.is-scrolled .nav-dropdown-trigger {
   border: 1px solid #0f5f53;
   border-radius: 9px;
   background: #0f5f53;
@@ -2106,7 +3622,9 @@ html {
 }
 
 .app-header.landing-header.is-scrolled .app-nav .nav-cta:hover,
-.app-header.landing-header.is-scrolled .nav-logout-btn:hover {
+.app-header.landing-header.is-scrolled .nav-logout-btn:hover,
+.app-header.landing-header.is-scrolled .nav-dropdown-trigger:hover,
+.app-header.landing-header.is-scrolled .nav-dropdown-trigger[aria-expanded="true"] {
   border-color: #0b4940;
   background: #0b4940;
   color: #fff;

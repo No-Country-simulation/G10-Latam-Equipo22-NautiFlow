@@ -34,6 +34,21 @@ const OwnerRequestPage = lazy(() =>
 const AdminRequestsPage = lazy(() =>
   import('./pages/AdminRequestsPage').then((m) => ({ default: m.AdminRequestsPage })),
 );
+const AdminVerificationPage = lazy(() =>
+  import('./pages/AdminVerificationPage').then((m) => ({ default: m.AdminVerificationPage })),
+);
+const AdminFleetPage = lazy(() =>
+  import('./pages/AdminFleetPage').then((m) => ({ default: m.AdminFleetPage })),
+);
+const AdminBoatSearchPage = lazy(() =>
+  import('./pages/AdminBoatSearchPage').then((m) => ({ default: m.AdminBoatSearchPage })),
+);
+const AdminEmptyLegsPage = lazy(() =>
+  import('./pages/AdminEmptyLegsPage').then((m) => ({ default: m.AdminEmptyLegsPage })),
+);
+const AdminReviewsPage = lazy(() =>
+  import('./pages/AdminReviewsPage').then((m) => ({ default: m.AdminReviewsPage })),
+);
 const AdminTripsPage = lazy(() =>
   import('./pages/AdminTripsPage').then((m) => ({ default: m.AdminTripsPage })),
 );
@@ -100,11 +115,61 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'admin/verificacion',
+        element: (
+          <ProtectedRoute role="ADMIN">
+            <Suspended>
+              <AdminVerificationPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/flota',
+        element: (
+          <ProtectedRoute role="ADMIN">
+            <Suspended>
+              <AdminFleetPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/busqueda',
+        element: (
+          <ProtectedRoute role="ADMIN">
+            <Suspended>
+              <AdminBoatSearchPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'admin/viajes',
         element: (
           <ProtectedRoute role="ADMIN">
             <Suspended>
               <AdminTripsPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/retornos',
+        element: (
+          <ProtectedRoute role="ADMIN">
+            <Suspended>
+              <AdminEmptyLegsPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'admin/resenas',
+        element: (
+          <ProtectedRoute role="ADMIN">
+            <Suspended>
+              <AdminReviewsPage />
             </Suspended>
           </ProtectedRoute>
         ),

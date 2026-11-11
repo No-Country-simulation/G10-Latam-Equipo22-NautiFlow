@@ -56,6 +56,15 @@ export class BoatsController {
 		return this.boatsService.listApproved();
 	}
 
+	@Get('admin/fleet')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.ADMIN)
+	@ApiOperation({ summary: 'Flota activa y verificada con disponibilidad y estado operativo' })
+	@ApiForbiddenResponse({ description: 'Requiere rol ADMIN.' })
+	getFleet(@Query() query: { q?: string; zonaId?: string; estadoOperativo?: string; page?: string; limit?: string }) {
+		return this.boatsService.getFleet(query);
+	}
+
 	@Get()
 	@UseGuards(JwtAuthGuard, RolesGuard)
 	@Roles(Role.ADMIN)

@@ -238,4 +238,108 @@ export class ReviewsService {
 		if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) throw new NotFoundException('No se encontró el enlace.');
 		return createHash('sha256').update(token).digest('hex');
 	}
+
+	async listAdminReviews(query: { boatId?: string; ratingMin?: number | string; fechaDesde?: string; fechaHasta?: string; page?: number | string; limit?: number | string }) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const where: Prisma.ReviewWhereInput = {};
+
+		if (query.boatId) where.embarcacionId = query.boatId;
+		if (query.ratingMin) where.rating = { gte: Number(query.ratingMin) };
+
+		const createdAt: Prisma.DateTimeFilter = {};
+		if (query.fechaDesde) createdAt.gte = new Date(query.fechaDesde);
+		if (query.fechaHasta) createdAt.lte = new Date(query.fechaHasta);
+		if (query.fechaDesde || query.fechaHasta) where.createdAt = createdAt;
+
+		const [data, total] = await Promise.all([
+			this.prisma.review.findMany({
+				where,
+				orderBy: { createdAt: 'desc' },
+				skip: (page - 1) * limit,
+				take: limit,
+				select: {
+					id: true,
+					rating: true,
+					comment: true,
+					createdAt: true,
+					embarcacion: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							propietario: { select: { user: { select: { name: true } } } },
+						},
+					},
+					trip: {
+						select: {
+							id: true,
+							scheduledAt: true,
+							origin: true,
+							destination: true,
+							passengerCount: true,
+							cliente: { select: { nombre: true, telefono: true, email: true } },
+						},
+					},
+				},
+			}),
+			this.prisma.review.count({ where }),
+		]);
+
+		return buildPaginated(data, total, page, limit);
+	}
+
+	async listPendingReviewTrips(query: { page?: number | string; limit?: number | string; q?: string }) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const where: Prisma.TripWhereInput = {
+			status: TripStatus.COMPLETED,
+			review: null,
+		};
+
+		const q = query.q?.trim();
+		if (q) {
+			where.OR = [
+				{ cliente: { nombre: { contains: q, mode: 'insensitive' } } },
+				{ embarcacion: { nombre: { contains: q, mode: 'insensitive' } } },
+				{ origin: { contains: q, mode: 'insensitive' } },
+				{ destination: { contains: q, mode: 'insensitive' } },
+			];
+		}
+
+		const [data, total] = await Promise.all([
+			this.prisma.trip.findMany({
+				where,
+				orderBy: { scheduledAt: 'desc' },
+				skip: (page - 1) * limit,
+				take: limit,
+				select: {
+					id: true,
+					scheduledAt: true,
+					origin: true,
+					destination: true,
+					passengerCount: true,
+					cliente: { select: { nombre: true, telefono: true, email: true } },
+					embarcacion: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							propietario: { select: { user: { select: { name: true } } } },
+						},
+					},
+					reviewToken: {
+						select: {
+							id: true,
+							expiresAt: true,
+							usedAt: true,
+						},
+					},
+				},
+			}),
+			this.prisma.trip.count({ where }),
+		]);
+
+		return buildPaginated(data, total, page, limit);
+	}
 }

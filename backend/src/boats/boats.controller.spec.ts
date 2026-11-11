@@ -12,6 +12,8 @@ describe('BoatsController', () => {
   });
 
   it('restringe la búsqueda de embarcaciones al rol ADMIN', () => {
+    expect(rolesDe('listApproved')).toEqual([Role.ADMIN]);
+    expect(rolesDe('getFleet')).toEqual([Role.ADMIN]);
     expect(rolesDe('search')).toEqual([Role.ADMIN]);
   });
 
