@@ -3,6 +3,7 @@ import { useAuth } from './useAuth';
 import { roleDashboard } from './role-routes';
 import type { UserRole } from './auth.types';
 import { WavyLoader } from '../components/WavyLoader';
+import { SessionRetry } from './SessionRetry';
 
 export function ProtectedRoute({
   role,
@@ -11,7 +12,7 @@ export function ProtectedRoute({
   role: UserRole;
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, sessionError } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,6 +23,7 @@ export function ProtectedRoute({
     );
   }
   if (!user) {
+    if (sessionError) return <SessionRetry />;
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
   if (user.role !== role) {

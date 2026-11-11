@@ -40,11 +40,17 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (init.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-  const response = await fetch(`${getApiUrl()}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers,
-  });
+  const url = `${getApiUrl()}${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      credentials: 'include',
+      headers,
+    });
+  } catch {
+    throw new ApiError(0, 'No pudimos conectar con el servidor. Revisá tu conexión e intentá de nuevo.');
+  }
 
   if (!response.ok) {
     const detail = await response.text();
@@ -52,7 +58,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       response.status === 401 &&
       !['/auth/login', '/auth/register', '/auth/logout'].includes(path)
     ) {
-      window.dispatchEvent(new Event('nautiflow:unauthorized'));
+      window.dispatchEvent(new CustomEvent('nautiflow:unauthorized', { detail: { path } }));
     }
     let message = detail;
     try {
