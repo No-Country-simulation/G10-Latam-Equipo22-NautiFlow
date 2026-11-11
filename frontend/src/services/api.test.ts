@@ -106,4 +106,48 @@ describe('api', () => {
 
     await expect(api.get('/auth/me')).rejects.toThrow('campo requerido, formato inválido');
   });
+
+  it('lanza ApiError con status 0 cuando fetch falla por red', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+
+    const failure = await api.get('/auth/me').catch((reason: unknown) => reason);
+    expect(failure).toBeInstanceOf(ApiError);
+    expect((failure as ApiError).status).toBe(0);
+    expect((failure as ApiError).message).toContain('Revisá tu conexión');
+  });
+
+  it('despacha nautiflow:unauthorized con el path ante un 401 de un endpoint protegido', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 401 })),
+    );
+    const events: CustomEvent<{ path?: string }>[] = [];
+    const listener = (event: Event) => events.push(event as CustomEvent<{ path?: string }>);
+    window.addEventListener('nautiflow:unauthorized', listener);
+
+    await api.get('/owners/me/profile').catch(() => undefined);
+
+    window.removeEventListener('nautiflow:unauthorized', listener);
+    expect(events).toHaveLength(1);
+    expect(events[0].detail).toEqual({ path: '/owners/me/profile' });
+  });
+
+  it('no despacha el evento ante un 401 de login, registro o logout', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('', { status: 401 })),
+    );
+    const listener = vi.fn();
+    window.addEventListener('nautiflow:unauthorized', listener);
+
+    await api.post('/auth/login', { email: 'a@b.com' }).catch(() => undefined);
+
+    window.removeEventListener('nautiflow:unauthorized', listener);
+    expect(listener).not.toHaveBeenCalled();
+  });
 });
