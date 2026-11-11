@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Bell,
   CalendarClock,
+  ChevronDown,
   ClipboardList,
   Compass,
   FileCheck2,
@@ -34,6 +35,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const [logoutError, setLogoutError] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const adminDropdownRef = useRef<HTMLDivElement>(null);
   const isLanding = location.pathname === '/';
   const isWorkspace =
     Boolean(user) &&
@@ -49,6 +52,37 @@ export function AppLayout() {
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        adminDropdownRef.current &&
+        !adminDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsAdminMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsAdminMenuOpen(false);
+      }
+    }
+
+    if (isAdminMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAdminMenuOpen]);
+
+  useEffect(() => {
+    setIsAdminMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -92,25 +126,36 @@ export function AppLayout() {
 
   if (isWorkspace && user) {
     const dashboardPath = roleDashboard(user.role);
-    const pageTitle = location.pathname.includes('solicitudes')
-      ? 'Solicitudes'
-      : location.pathname.includes('solicitud')
-      ? 'Verificación'
-      : location.pathname.includes('viajes')
-      ? 'Gestión de viajes'
-      : 'Dashboard';
+    const pageTitle =
+      location.pathname.includes('verificacion')
+        ? 'Verificación'
+        : location.pathname.includes('flota')
+        ? 'Gestión de flota'
+        : location.pathname.includes('solicitudes')
+        ? 'Solicitudes'
+        : location.pathname.includes('busqueda')
+        ? 'Búsqueda y asignación'
+        : location.pathname.includes('retornos')
+        ? 'Retornos vacíos'
+        : location.pathname.includes('resenas')
+        ? 'Reseñas'
+        : location.pathname.includes('viajes')
+        ? 'Gestión de viajes'
+        : location.pathname.includes('solicitud')
+        ? 'Verificación'
+        : 'Dashboard';
 
     const navItems =
       user.role === 'ADMIN'
         ? [
             { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
-            { to: '/admin/solicitudes', label: 'Verificación', icon: FileCheck2 },
-            { to: '/admin/solicitudes#flota', label: 'Gestión de flota', icon: Ship },
-            { to: '/admin/solicitudes#solicitudes', label: 'Solicitudes', icon: ClipboardList },
-            { to: '/admin/viajes#busqueda', label: 'Búsqueda y asignación', icon: Search },
+            { to: '/admin/verificacion', label: 'Verificación', icon: FileCheck2 },
+            { to: '/admin/flota', label: 'Gestión de flota', icon: Ship },
+            { to: '/admin/solicitudes', label: 'Solicitudes', icon: ClipboardList },
+            { to: '/admin/busqueda', label: 'Búsqueda y asignación', icon: Search },
             { to: '/admin/viajes', label: 'Gestión de viajes', icon: CalendarClock },
-            { to: '/admin/viajes#retornos', label: 'Retornos vacíos', icon: RotateCcw },
-            { to: '/estado', label: 'Reseñas', icon: Star },
+            { to: '/admin/retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/admin/resenas', label: 'Reseñas', icon: Star },
           ]
         : [
             { to: '/owner/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
@@ -217,27 +262,66 @@ export function AppLayout() {
               Cómo funciona
             </Link>
             {!user && <Link to="/registro/lanchero">Para lancheros</Link>}
-            {user && (
+            {user && user.role !== 'ADMIN' && (
               <>
                 <NavLink to={roleDashboard(user.role)}>Panel</NavLink>
                 {user.role === 'OWNER' && <NavLink to="/owner/solicitud">Mi solicitud</NavLink>}
-                {user.role === 'ADMIN' && (
-                  <>
-                    <NavLink to="/admin/solicitudes">Solicitudes</NavLink>
-                    <NavLink to="/admin/viajes">Viajes</NavLink>
-                  </>
-                )}
               </>
             )}
           </span>
           <span className="landing-header-actions">
             {user ? (
-              <>
-                <span className="nav-user">{user.name}</span>
-                <button type="button" className="nav-cta nav-logout-btn" onClick={handleLogout}>
-                  Salir
-                </button>
-              </>
+              user.role === 'ADMIN' ? (
+                <div className="nav-dropdown-container" ref={adminDropdownRef}>
+                  <button
+                    type="button"
+                    className="nav-dropdown-trigger"
+                    onClick={() => setIsAdminMenuOpen((prev) => !prev)}
+                    aria-expanded={isAdminMenuOpen}
+                    aria-haspopup="true"
+                    aria-label="Menú de administración"
+                  >
+                    <span>{user.name || 'Administración NautiFlow'}</span>
+                    <ChevronDown
+                      size={15}
+                      className={`nav-dropdown-chevron${isAdminMenuOpen ? ' is-open' : ''}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {isAdminMenuOpen && (
+                    <div className="nav-dropdown-menu" role="menu">
+                      <Link
+                        to={roleDashboard(user.role)}
+                        className="nav-dropdown-item"
+                        role="menuitem"
+                        onClick={() => setIsAdminMenuOpen(false)}
+                      >
+                        <LayoutGrid size={16} aria-hidden="true" />
+                        <span>Ir al panel</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="nav-dropdown-item nav-dropdown-item-logout"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsAdminMenuOpen(false);
+                          void handleLogout();
+                        }}
+                      >
+                        <LogOut size={16} aria-hidden="true" />
+                        <span>Cerrar sesión</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <span className="nav-user">{user.name}</span>
+                  <button type="button" className="nav-cta nav-logout-btn" onClick={handleLogout}>
+                    Salir
+                  </button>
+                </>
+              )
             ) : (
               <>
                 <Link to="/login">Ingresar</Link>

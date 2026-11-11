@@ -10,6 +10,14 @@ export class ListTripsQueryDto extends PaginationQueryDto {
   status?: TripStatus;
 
   @ApiPropertyOptional({
+    example: 'active',
+    description: 'Alcance del listado: active (PENDING/ASSIGNED/CONFIRMED) o history (COMPLETED/CANCELLED)',
+  })
+  @IsOptional()
+  @IsString()
+  scope?: string;
+
+  @ApiPropertyOptional({
     example: 'delta',
     description: 'Texto en cliente (nombre, teléfono o email), origen o destino',
   })

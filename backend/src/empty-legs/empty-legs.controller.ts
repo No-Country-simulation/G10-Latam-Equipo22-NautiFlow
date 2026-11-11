@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,
@@ -14,7 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
-import { Role } from '../generated/prisma/client.js';
+import { EmptyLegStatus, Role } from '../generated/prisma/client.js';
 import { CreateEmptyLegDto } from './create-empty-leg.dto.js';
 import { EmptyLegCreadoDto, PaginatedEmptyLegsDto } from './empty-legs.responses.js';
 import { EmptyLegsService } from './empty-legs.service.js';
@@ -49,5 +49,15 @@ export class EmptyLegsController {
   @ApiConflictResponse({ description: 'El viaje ya tiene un tramo vacío activo.' })
   create(@Body() dto: CreateEmptyLegDto) {
     return this.emptyLegsService.create(dto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Actualiza el estado de un tramo vacío (AVAILABLE, OFFERED, ASSIGNED, CLOSED)' })
+  @ApiOkResponse({ description: 'Estado actualizado con éxito.' })
+  updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('status') status: EmptyLegStatus,
+  ) {
+    return this.emptyLegsService.updateStatus(id, status);
   }
 }

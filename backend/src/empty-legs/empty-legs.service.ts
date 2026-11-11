@@ -126,4 +126,20 @@ export class EmptyLegsService {
 
     return buildPaginated(data, total, page, limit);
   }
+
+  async updateStatus(id: string, status: EmptyLegStatus) {
+    const emptyLeg = await this.prisma.emptyLeg.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+    if (!emptyLeg) {
+      throw new NotFoundException('No se encontró el tramo vacío.');
+    }
+
+    return this.prisma.emptyLeg.update({
+      where: { id },
+      data: { status },
+      select: { id: true, status: true, scheduledAt: true },
+    });
+  }
 }

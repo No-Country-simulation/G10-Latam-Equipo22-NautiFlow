@@ -1,150 +1,290 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Eye,
+  FileCheck2,
+  Search,
+  User,
+  XCircle,
+} from 'lucide-react';
 import { PaginationBar } from '../components/PaginationBar';
+import { WavyLoader } from '../components/WavyLoader';
 import { ApiError, api } from '../services/api';
 import type { PageMeta, Paginated } from '../types/api';
 
-interface RequestRecord {
+interface BoatSummary {
   id: string;
+  nombre: string;
+  matricula: string;
+  capacidad: number;
+  estado: string;
+  zonas: Array<{ zona: { id: string; nombre: string } }>;
+}
+
+interface DocumentItem {
+  id: string;
+  type: string;
   status: string;
+  filename: string;
+  reviewNote?: string | null;
+  createdAt: string;
+}
+
+interface BoatmanRequest {
+  id: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   reviewNote: string | null;
   createdAt: string;
   user: { id: string; name: string; email: string; status: string };
-  embarcaciones: Array<{ id: string; nombre: string; matricula: string; capacidad: number; estado: string; zonas: Array<{ zona: { nombre: string } }> }>;
-  documents: Array<{ id: string; type: string; status: string; filename: string; mimeType: string; size: number; reviewNote: string | null }>;
-}
-
-interface PendingDocument {
-  id: string;
-  ownerId: string;
-  type: string;
-  filename: string;
-  mimeType: string;
-  size: number;
-  owner: { user: { name: string; email: string } };
-  boat: { nombre: string; matricula: string } | null;
+  embarcaciones: BoatSummary[];
+  documents: DocumentItem[];
 }
 
 const docTypeLabels: Record<string, string> = {
-  LICENSE: 'Licencia', INSURANCE: 'Seguro', BACKGROUND_CHECK: 'Antecedentes', PHOTO: 'Foto',
+  LICENSE: 'Licencia',
+  INSURANCE: 'Seguro',
+  BACKGROUND_CHECK: 'Antecedentes',
+  PHOTO: 'Foto',
 };
 
+const REQUIRED_DOCS = ['LICENSE', 'INSURANCE', 'BACKGROUND_CHECK'];
+
 export function AdminRequestsPage() {
-  const [requests, setRequests] = useState<RequestRecord[]>([]);
-  const [documents, setDocuments] = useState<PendingDocument[]>([]);
-  const [requestsMeta, setRequestsMeta] = useState<PageMeta | null>(null);
-  const [documentsMeta, setDocumentsMeta] = useState<PageMeta | null>(null);
-  const [requestsPage, setRequestsPage] = useState(1);
-  const [documentsPage, setDocumentsPage] = useState(1);
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [requests, setRequests] = useState<BoatmanRequest[]>([]);
+  const [meta, setMeta] = useState<PageMeta | null>(null);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | ''>('PENDING');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
-  async function reload() {
+  async function loadRequests() {
+    setLoading(true);
     setError('');
     try {
-      const [requestData, documentData] = await Promise.all([
-        api.get<Paginated<RequestRecord>>(`/admin/solicitudes?status=PENDING&page=${requestsPage}&limit=20`),
-        api.get<Paginated<PendingDocument>>(`/admin/documents?page=${documentsPage}&limit=20`),
-      ]);
-      setRequests(requestData.data);
-      setRequestsMeta(requestData.meta);
-      setDocuments(documentData.data);
-      setDocumentsMeta(documentData.meta);
-    } catch {
-      setError('No se pudieron cargar las solicitudes. Verificá tu sesión administrativa.');
+      const statusParam = statusFilter ? `&status=${statusFilter}` : '';
+      const res = await api.get<Paginated<BoatmanRequest>>(
+        `/admin/solicitudes?page=${page}&limit=12${statusParam}`
+      );
+      setRequests(res.data);
+      setMeta(res.meta);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudieron cargar las solicitudes.');
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { void reload(); }, [requestsPage, documentsPage]);
+  useEffect(() => {
+    void loadRequests();
+  }, [page, statusFilter]);
 
-  async function reviewDocument(documentId: string, decision: 'APPROVED' | 'REJECTED') {
-    const note = notes[documentId]?.trim();
-    if (!note || busy) return;
-    setBusy(documentId);
-    setError('');
-    try {
-      await api.patch(`/admin/documents/${documentId}/review`, { decision, note });
-      await reload();
-    } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'No se pudo guardar la revisión.');
-    } finally {
-      setBusy('');
-    }
-  }
-
-  async function reviewRequest(requestId: string, decision: 'aprobar' | 'rechazar') {
-    const note = notes[requestId]?.trim();
-    if (!note || busy) return;
-    setBusy(requestId);
-    setError('');
-    try {
-      await api.patch(`/admin/solicitudes/${requestId}/${decision}`, { decision: decision === 'aprobar' ? 'APPROVED' : 'REJECTED', note });
-      await reload();
-    } catch (reason) {
-      setError(reason instanceof ApiError ? reason.message : 'No se pudo guardar la decisión.');
-    } finally {
-      setBusy('');
-    }
-  }
+  const filtered = requests.filter((r) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      r.user.name.toLowerCase().includes(term) ||
+      r.user.email.toLowerCase().includes(term) ||
+      (r.embarcaciones[0]?.nombre.toLowerCase() ?? '').includes(term)
+    );
+  });
 
   return (
-    <section className="admin-page">
-      <header className="dashboard-heading">
-        <div><p className="eyebrow">Administración · Flota</p><h1>Solicitudes</h1><p className="lead">Revisá los documentos antes de aprobar perfiles y embarcaciones.</p></div>
-        <button className="button button-ghost" type="button" onClick={() => void reload()} disabled={loading}>Actualizar</button>
+    <div className="admin-page-container">
+      <header className="admin-header-row">
+        <div>
+          <span className="admin-kicker">BANDEJA DE ENTRADA</span>
+          <h1>Solicitudes de Lancheros</h1>
+          <p className="admin-subtitle">
+            Cada solicitud agrupa los datos del lanchero, su embarcación y el estado de sus documentos obligatorios.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="button button-ghost"
+          onClick={() => void loadRequests()}
+          disabled={loading}
+        >
+          Actualizar
+        </button>
       </header>
-      {error && <p className="form-error" role="alert">{error}</p>}
-      {loading ? <p className="session-loading" role="status">Cargando solicitudes...</p> : (
-        <>
-          <section className="admin-section">
-            <h2>Documentos pendientes <span className="count-mark">{documentsMeta?.total ?? documents.length}</span></h2>
-            {!documents.length && <p className="empty-state">{documentsPage > 1 ? 'No hay documentos en esta página.' : 'No hay documentos pendientes de revisión.'}</p>}
-            <div className="admin-list">
-              {documents.map((document) => (
-                <article className="admin-record" key={document.id}>
-                  <div className="admin-record-heading">
-                    <div><strong>{docTypeLabels[document.type] ?? document.type}</strong><p>{document.owner.user.name} · {document.owner.user.email}</p><p>{document.boat?.nombre ?? 'Perfil'} · {document.filename} · {(document.size / 1024 / 1024).toFixed(1)} MB</p></div>
-                    <a className="text-action" href={`${import.meta.env.VITE_API_URL}/documents/${document.id}/file`} target="_blank" rel="noreferrer">Abrir documento</a>
-                  </div>
-                  <form className="review-form" onSubmit={(event) => { event.preventDefault(); void reviewDocument(document.id, 'APPROVED'); }}>
-                    <label>Nota de revisión<textarea required minLength={3} maxLength={1000} value={notes[document.id] ?? ''} onChange={(event) => setNotes({ ...notes, [document.id]: event.target.value })} /></label>
-                    <div className="inline-actions">
-                      <button className="button" type="submit" disabled={busy === document.id}>{busy === document.id ? 'Guardando...' : 'Aprobar documento'}</button>
-                      <button className="button button-danger" type="button" disabled={busy === document.id || !notes[document.id]?.trim()} onClick={() => void reviewDocument(document.id, 'REJECTED')}>Rechazar</button>
-                    </div>
-                  </form>
-                </article>
-              ))}
-            </div>
-            <PaginationBar meta={documentsMeta} onChange={setDocumentsPage} label={(value) => `${value.total} documentos`} />
-          </section>
 
-          <section className="admin-section">
-            <h2>Perfiles pendientes <span className="count-mark">{requestsMeta?.total ?? requests.length}</span></h2>
-            {!requests.length && <p className="empty-state">{requestsPage > 1 ? 'No hay perfiles en esta página.' : 'No hay perfiles pendientes.'}</p>}
-            <div className="admin-list">
-              {requests.map((request) => (
-                <article className="admin-record" key={request.id}>
-                  <div><strong>{request.user.name}</strong><p>{request.user.email} · recibido {new Date(request.createdAt).toLocaleDateString('es-AR')}</p></div>
-                  {request.embarcaciones.map((boat) => <p key={boat.id}>{boat.nombre} · {boat.matricula} · {boat.capacidad} pasajeros · {boat.zonas.map(({ zona }) => zona.nombre).join(', ')}</p>)}
-                  <p>{request.documents.filter((doc) => doc.status === 'APPROVED').length} de {request.documents.filter((doc) => doc.type !== 'PHOTO').length} documentos obligatorios aprobados</p>
-                  <form className="review-form" onSubmit={(event) => { event.preventDefault(); void reviewRequest(request.id, 'aprobar'); }}>
-                    <label>Nota final<textarea required minLength={3} maxLength={1000} value={notes[request.id] ?? ''} onChange={(event) => setNotes({ ...notes, [request.id]: event.target.value })} /></label>
-                    <div className="inline-actions">
-                      <button className="button" type="submit" disabled={busy === request.id}>{busy === request.id ? 'Guardando...' : 'Aprobar perfil y lancha'}</button>
-                      <button className="button button-danger" type="button" disabled={busy === request.id || !notes[request.id]?.trim()} onClick={() => void reviewRequest(request.id, 'rechazar')}>Rechazar solicitud</button>
+      {error && <div className="nf-alert nf-alert-error" role="alert">{error}</div>}
+
+      <div className="admin-filters-bar">
+        <div className="filter-tabs">
+          <button
+            type="button"
+            className={`filter-tab${statusFilter === 'PENDING' ? ' is-active' : ''}`}
+            onClick={() => { setStatusFilter('PENDING'); setPage(1); }}
+          >
+            Pendientes
+          </button>
+          <button
+            type="button"
+            className={`filter-tab${statusFilter === 'APPROVED' ? ' is-active' : ''}`}
+            onClick={() => { setStatusFilter('APPROVED'); setPage(1); }}
+          >
+            Aprobadas
+          </button>
+          <button
+            type="button"
+            className={`filter-tab${statusFilter === 'REJECTED' ? ' is-active' : ''}`}
+            onClick={() => { setStatusFilter('REJECTED'); setPage(1); }}
+          >
+            Rechazadas
+          </button>
+          <button
+            type="button"
+            className={`filter-tab${statusFilter === '' ? ' is-active' : ''}`}
+            onClick={() => { setStatusFilter(''); setPage(1); }}
+          >
+            Todas
+          </button>
+        </div>
+
+        <div className="search-input-wrap">
+          <Search size={16} className="search-icon" aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Buscar lanchero o embarcación..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="admin-loading-state">
+          <WavyLoader label="Cargando solicitudes por lanchero…" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="admin-empty-card">
+          <FileCheck2 size={44} className="empty-icon" />
+          <h3>No hay solicitudes para mostrar</h3>
+          <p>
+            {statusFilter === 'PENDING'
+              ? 'No hay solicitudes pendientes en este momento.'
+              : 'No se encontraron solicitudes con el filtro actual.'}
+          </p>
+        </div>
+      ) : (
+        <div className="requests-per-owner-list">
+          {filtered.map((req) => {
+            const boat = req.embarcaciones[0];
+
+            return (
+              <article key={req.id} className="owner-request-card">
+                <div className="owner-request-header">
+                  <div className="owner-profile-brief">
+                    <div className="avatar-circle">
+                      <User size={22} />
                     </div>
-                  </form>
-                </article>
-              ))}
-            </div>
-            <PaginationBar meta={requestsMeta} onChange={setRequestsPage} label={(value) => `${value.total} perfiles`} />
-          </section>
-        </>
+                    <div>
+                      <strong className="owner-name-title">{req.user.name}</strong>
+                      <span className="owner-email-sub">{req.user.email}</span>
+                      <span className="owner-date-sub">
+                        <Calendar size={13} /> Registrado:{' '}
+                        {new Date(req.createdAt).toLocaleDateString('es-AR')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="owner-request-status-side">
+                    <span
+                      className={`status-pill status-${req.status.toLowerCase()}`}
+                    >
+                      {req.status === 'PENDING'
+                        ? 'Pendiente de revisión'
+                        : req.status === 'APPROVED'
+                        ? 'Aprobada'
+                        : 'Rechazada'}
+                    </span>
+                    <Link
+                      to="/admin/verificacion"
+                      className="button button-ghost btn-sm"
+                    >
+                      Revisar en Verificación →
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="owner-request-body">
+                  {boat && (
+                    <div className="owner-boat-row">
+                      <span className="boat-tag">🚤 {boat.nombre} ({boat.matricula})</span>
+                      <span className="boat-meta-tag">Capacidad: {boat.capacidad} pasajeros</span>
+                      <span className="boat-meta-tag">
+                        Zonas: {boat.zonas?.map((z) => z.zona.nombre).join(', ') || 'Delta del Tigre'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Documentos agrupados del lanchero */}
+                  <div className="owner-docs-grid">
+                    {REQUIRED_DOCS.map((docType) => {
+                      const doc = req.documents.find((d) => d.type === docType);
+                      const isApproved = doc?.status === 'APPROVED';
+                      const isRejected = doc?.status === 'REJECTED';
+
+                      return (
+                        <div key={docType} className="owner-doc-card">
+                          <div className="owner-doc-title">
+                            {isApproved ? (
+                              <CheckCircle2 size={16} className="text-success" />
+                            ) : isRejected ? (
+                              <XCircle size={16} className="text-danger" />
+                            ) : (
+                              <Clock size={16} className="text-warning" />
+                            )}
+                            <strong>{docTypeLabels[docType]}</strong>
+                          </div>
+
+                          {doc ? (
+                            <div className="owner-doc-meta">
+                              <span className="owner-doc-file">{doc.filename}</span>
+                              <div className="owner-doc-actions">
+                                <a
+                                  href={`${import.meta.env.VITE_API_URL}/documents/${doc.id}/file`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="doc-link-btn"
+                                >
+                                  <Eye size={13} /> Ver archivo
+                                </a>
+                                <span className={`doc-badge doc-badge-${doc.status.toLowerCase()}`}>
+                                  {doc.status === 'APPROVED'
+                                    ? 'Aprobado'
+                                    : doc.status === 'REJECTED'
+                                    ? 'Rechazado'
+                                    : 'Pendiente'}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="doc-badge doc-badge-missing">No cargado</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {req.reviewNote && (
+                    <div className="admin-note-preview">
+                      <strong>Nota de revisión:</strong> {req.reviewNote}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
-    </section>
+
+      <PaginationBar meta={meta} onChange={setPage} label={(v) => `${v.total} solicitudes`} />
+    </div>
   );
 }

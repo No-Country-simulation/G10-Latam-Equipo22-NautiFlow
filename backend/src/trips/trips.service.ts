@@ -20,7 +20,13 @@ export class TripsService {
 		const page = Number(query.page) || 1;
 		const limit = Number(query.limit) || 20;
 		const where: Prisma.TripWhereInput = {};
-		if (query.status) where.status = query.status;
+		if (query.scope === 'active') {
+			where.status = { in: [TripStatus.PENDING, TripStatus.ASSIGNED, TripStatus.CONFIRMED] };
+		} else if (query.scope === 'history') {
+			where.status = { in: [TripStatus.COMPLETED, TripStatus.CANCELLED] };
+		} else if (query.status) {
+			where.status = query.status;
+		}
 
 		const q = query.q?.trim();
 		if (q) {
@@ -58,7 +64,21 @@ export class TripsService {
 					destination: true,
 					status: true,
 					cliente: { select: { nombre: true, telefono: true, email: true } },
-					embarcacion: { select: { id: true, nombre: true, matricula: true } },
+					embarcacion: {
+						select: {
+							id: true,
+							nombre: true,
+							matricula: true,
+							capacidad: true,
+							propietario: {
+								select: {
+									phone: true,
+									whatsappPhone: true,
+									user: { select: { name: true } },
+								},
+							},
+						},
+					},
 				},
 			}),
 			this.prisma.trip.count({ where }),

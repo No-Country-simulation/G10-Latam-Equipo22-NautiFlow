@@ -1,5 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { EstadoEmbarcacion, OwnerStatus, Prisma } from '../generated/prisma/client.js';
+import { EmptyLegStatus, EstadoEmbarcacion, OwnerStatus, Prisma, TripStatus } from '../generated/prisma/client.js';
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from './boat-schedule.service.js';
@@ -23,6 +23,96 @@ export class BoatsService {
 			orderBy: { nombre: 'asc' },
 			select: { id: true, nombre: true, matricula: true, capacidad: true },
 		});
+	}
+
+	async getFleet(query: { q?: string; zonaId?: string; estadoOperativo?: string; page?: number | string; limit?: number | string }) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const q = query.q?.trim();
+
+		const where: Prisma.EmbarcacionWhereInput = {
+			estado: EstadoEmbarcacion.VERIFICADA,
+			propietario: { status: OwnerStatus.APPROVED, user: { status: 'ACTIVE' } },
+		};
+
+		if (query.zonaId) {
+			where.zonas = { some: { zonaId: query.zonaId } };
+		}
+
+		if (q) {
+			where.OR = [
+				{ nombre: { contains: q, mode: 'insensitive' } },
+				{ matricula: { contains: q, mode: 'insensitive' } },
+				{ propietario: { user: { name: { contains: q, mode: 'insensitive' } } } },
+			];
+		}
+
+		const boats = await this.prisma.embarcacion.findMany({
+			where,
+			orderBy: { nombre: 'asc' },
+			select: {
+				id: true,
+				nombre: true,
+				matricula: true,
+				capacidad: true,
+				estado: true,
+				descripcion: true,
+				propietario: {
+					select: {
+						id: true,
+						phone: true,
+						whatsappPhone: true,
+						user: { select: { id: true, name: true, email: true } },
+					},
+				},
+				zonas: { select: { zona: { select: { id: true, nombre: true } } } },
+				viajes: {
+					where: { status: { in: [TripStatus.PENDING, TripStatus.ASSIGNED, TripStatus.CONFIRMED] } },
+					orderBy: { scheduledAt: 'asc' },
+					take: 5,
+					select: {
+						id: true,
+						origin: true,
+						destination: true,
+						scheduledAt: true,
+						status: true,
+						passengerCount: true,
+						cliente: { select: { nombre: true, telefono: true } },
+					},
+				},
+				emptyLegs: {
+					where: { status: EmptyLegStatus.AVAILABLE },
+					orderBy: { scheduledAt: 'asc' },
+					take: 5,
+					select: {
+						id: true,
+						origin: true,
+						destination: true,
+						scheduledAt: true,
+						status: true,
+					},
+				},
+			},
+		});
+
+		const enriched = boats.map((b) => {
+			let estadoOperativo: 'LIBRE' | 'RESERVADA' | 'RETORNO_DISPONIBLE' = 'LIBRE';
+			if (b.emptyLegs.length > 0) {
+				estadoOperativo = 'RETORNO_DISPONIBLE';
+			} else if (b.viajes.length > 0) {
+				estadoOperativo = 'RESERVADA';
+			}
+			return { ...b, estadoOperativo };
+		});
+
+		const filtered = query.estadoOperativo
+			? enriched.filter((b) => b.estadoOperativo === query.estadoOperativo)
+			: enriched;
+
+		const total = filtered.length;
+		const paginated = filtered.slice((page - 1) * limit, page * limit);
+
+		return buildPaginated(paginated, total, page, limit);
 	}
 
 	async search(query: SearchBoatsQueryDto) {
