@@ -1,6 +1,7 @@
-import { Controller, Get, Inject, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Param, ParseUUIDPipe, Patch, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -23,5 +24,16 @@ export class NotificationsController {
   @ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
   async getNotifications(@Req() request: AuthenticatedRequest) {
     return this.notificationsService.getNotifications(request.user!.id);
+  }
+
+  @Patch(':id/read')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Marca una notificación como leída' })
+  @ApiOkResponse({ description: 'Notificación marcada como leída.' })
+  @ApiNotFoundResponse({ description: 'Notificación inexistente o de otro usuario.' })
+  @ApiUnauthorizedResponse({ description: 'Sesión ausente o inválida.' })
+  async markRead(@Req() request: AuthenticatedRequest, @Param('id', ParseUUIDPipe) id: string) {
+    return this.notificationsService.markRead(request.user!.id, id);
   }
 }

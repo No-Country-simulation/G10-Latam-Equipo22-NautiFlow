@@ -117,8 +117,23 @@ model User {
   createdTrips Trip[] @relation("TripCreatedBy")
   createdSalidas Salida[] @relation("SalidaCreatedBy")
   reviewedReservas Reserva[] @relation("ReservaReviewedBy")
+  notifications Notification[]
 
   @@map("usuarios")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid @map("usuarioId")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @map("titulo")
+  message   String   @map("mensaje")
+  read      Boolean  @default(false) @map("leida")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, read, createdAt])
+  @@map("notificaciones")
 }
 
 model Owner {
@@ -312,8 +327,8 @@ model Tramo {
 /// Tramo de regreso sin pasajeros que nace de un viaje de ida.
 model EmptyLeg {
   id            String         @id @default(uuid()) @db.Uuid
-  tripId        String         @db.Uuid @map("viajeId")
-  trip          Trip           @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  tripId        String?        @db.Uuid @map("viajeId")
+  trip          Trip?          @relation(fields: [tripId], references: [id], onDelete: Restrict)
   embarcacionId String         @db.Uuid
   embarcacion   Embarcacion    @relation(fields: [embarcacionId], references: [id], onDelete: Restrict)
   origin        String   @map("origen")

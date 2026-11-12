@@ -10,6 +10,7 @@ import {
 import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { BoatScheduleService } from '../boats/boat-schedule.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSalidaDto } from './create-salida.dto.js';
 import type { ListSalidasQueryDto } from './list-salidas-query.dto.js';
 import type { PublicSalidasQueryDto } from './public-salidas-query.dto.js';
@@ -36,6 +37,23 @@ type Rating = { average: number | null; total: number };
 
 const SIN_RATING: Rating = { average: null, total: 0 };
 
+const ESTADO_SALIDA_TEXTO: Record<EstadoSalida, string> = {
+	[EstadoSalida.PROGRAMADA]: 'Programada',
+	[EstadoSalida.CANCELADA]: 'Cancelada',
+	[EstadoSalida.COMPLETADA]: 'Completada',
+};
+
+const ESTADO_TRAMO_TEXTO: Record<EstadoTramo, string> = {
+	[EstadoTramo.DISPONIBLE]: 'Disponible',
+	[EstadoTramo.RESERVADO]: 'Reservado',
+	[EstadoTramo.CERRADO]: 'Cerrado',
+	[EstadoTramo.CANCELADO]: 'Cancelado',
+};
+
+function fechaTexto(fecha: Date) {
+	return fecha.toISOString().slice(0, 16).replace('T', ' ');
+}
+
 function construirRating(average: number | null, total: number): Rating {
 	return {
 		average: average === null ? null : Math.round(average * 10) / 10,
@@ -48,6 +66,7 @@ export class SalidasService {
 	constructor(
 		@Inject(PrismaService) private readonly prisma: PrismaService,
 		@Inject(BoatScheduleService) private readonly schedule: BoatScheduleService,
+		@Inject(NotificationsService) private readonly notifications: NotificationsService,
 	) {}
 
 	async create(dto: CreateSalidaDto, adminId: string) {
@@ -110,9 +129,18 @@ export class SalidasService {
 	}
 
 	async list(query: ListSalidasQueryDto) {
+		return this.paginatedList({}, query);
+	}
+
+	async listMine(userId: string, query: ListSalidasQueryDto) {
+		const propietarioId = await this.resolveOwnerId(userId);
+		return this.paginatedList({ embarcacion: { propietarioId } }, query);
+	}
+
+	private async paginatedList(baseWhere: Prisma.SalidaWhereInput, query: ListSalidasQueryDto) {
 		const page = Number(query.page) || 1;
 		const limit = Number(query.limit) || 20;
-		const where: Prisma.SalidaWhereInput = {};
+		const where: Prisma.SalidaWhereInput = { ...baseWhere };
 		if (query.estado) where.estado = query.estado;
 
 		const [data, total] = await Promise.all([
@@ -191,7 +219,7 @@ export class SalidasService {
 				fechaSalida: true,
 				estado: true,
 				embarcacionId: true,
-				tramos: { select: { id: true, fechaHora: true } },
+				tramos: { select: { id: true, tipo: true, fechaHora: true } },
 			},
 		});
 		if (!salida) throw new NotFoundException('No se encontró la salida.');
@@ -210,13 +238,19 @@ export class SalidasService {
 			const delta = nuevaFecha.getTime() - salida.fechaSalida.getTime();
 			const tramosNuevos = salida.tramos.map((t) => ({
 				id: t.id,
+				tipo: t.tipo,
 				fechaHora: new Date(t.fechaHora.getTime() + delta),
 			}));
 
 			for (const tramo of tramosNuevos) {
-				if (tramo.fechaHora <= nuevaFecha) {
+				if (tramo.tipo === 'IDA' && tramo.fechaHora < nuevaFecha) {
 					throw new BadRequestException(
-						'El tramo de ida no puede quedar anterior o igual a la nueva fecha de salida.',
+						'El tramo de ida no puede ser anterior a la nueva fecha de salida.',
+					);
+				}
+				if (tramo.tipo === 'VUELTA' && tramo.fechaHora <= nuevaFecha) {
+					throw new BadRequestException(
+						'El tramo de vuelta debe ser posterior a la nueva fecha de salida.',
 					);
 				}
 			}
@@ -319,10 +353,87 @@ export class SalidasService {
 		});
 	}
 
+	async updateMine(userId: string, actorName: string, id: string, dto: UpdateSalidaDto) {
+		const salida = await this.assertOwnedSalida(userId, id);
+		const result = await this.update(id, dto);
+
+		const detalles: string[] = [];
+		if (dto.fechaSalida !== undefined) detalles.push(`nueva fecha ${fechaTexto(new Date(dto.fechaSalida))}`);
+		if (dto.estado !== undefined) detalles.push(`estado: ${ESTADO_SALIDA_TEXTO[dto.estado]}`);
+		if (detalles.length > 0) {
+			await this.notifications.notifyAdmins(
+				'Salida modificada',
+				`"${actorName}" modificó la salida del ${fechaTexto(salida.fechaSalida)} (${detalles.join(', ')}).`,
+			);
+		}
+		return result;
+	}
+
+	async updateTramoMine(
+		userId: string,
+		actorName: string,
+		salidaId: string,
+		tramoId: string,
+		dto: UpdateTramoDto,
+	) {
+		const salida = await this.assertOwnedSalida(userId, salidaId);
+
+		if (dto.estado !== undefined) {
+			if (dto.estado === EstadoTramo.RESERVADO) {
+				throw new BadRequestException('El estado reservado se asigna automáticamente con las reservas.');
+			}
+			const tramo = await this.prisma.tramo.findUnique({
+				where: { id: tramoId },
+				select: { salidaId: true, estado: true },
+			});
+			if (!tramo || tramo.salidaId !== salidaId) {
+				throw new NotFoundException('No se encontró el tramo.');
+			}
+			if (tramo.estado === EstadoTramo.RESERVADO) {
+				throw new BadRequestException(
+					'Este tramo tiene reservas activas; su estado lo gestiona el equipo de NautiFlow.',
+				);
+			}
+		}
+
+		const result = await this.updateTramo(salidaId, tramoId, dto);
+		if (dto.estado !== undefined) {
+			await this.notifications.notifyAdmins(
+				'Tramo actualizado',
+				`"${actorName}" modificó un tramo de la salida del ${fechaTexto(salida.fechaSalida)} ` +
+					`(estado: ${ESTADO_TRAMO_TEXTO[dto.estado]}).`,
+			);
+		}
+		return result;
+	}
+
+	private async resolveOwnerId(userId: string) {
+		const owner = await this.prisma.owner.findUnique({
+			where: { userId },
+			select: { id: true },
+		});
+		if (!owner) {
+			throw new NotFoundException('No se encontró la ficha del propietario.');
+		}
+		return owner.id;
+	}
+
+	private async assertOwnedSalida(userId: string, salidaId: string) {
+		const propietarioId = await this.resolveOwnerId(userId);
+		const salida = await this.prisma.salida.findFirst({
+			where: { id: salidaId, embarcacion: { propietarioId } },
+			select: { id: true, fechaSalida: true },
+		});
+		if (!salida) {
+			throw new NotFoundException('No se encontró la salida.');
+		}
+		return salida;
+	}
+
 	async listPublic(query: PublicSalidasQueryDto) {
 		const now = new Date();
 		const where: Prisma.SalidaWhereInput = {
-			estado: EstadoSalida.PROGRAMADA,
+			estado: query.estado ?? { not: EstadoSalida.COMPLETADA },
 			fechaSalida: { gte: now },
 			embarcacion: { ...EMBARCACION_ELEGIBLE },
 		};
@@ -362,6 +473,7 @@ export class SalidasService {
 				select: {
 					id: true,
 					fechaSalida: true,
+					estado: true,
 					embarcacion: { select: CAMPOS_PUBLICOS_EMBARCACION },
 					tramos: {
 						orderBy: { fechaHora: 'asc' },
@@ -402,13 +514,14 @@ export class SalidasService {
 		const salida = await this.prisma.salida.findFirst({
 			where: {
 				id,
-				estado: EstadoSalida.PROGRAMADA,
+				estado: { not: EstadoSalida.COMPLETADA },
 				fechaSalida: { gte: now },
 				embarcacion: { ...EMBARCACION_ELEGIBLE },
 			},
 			select: {
 				id: true,
 				fechaSalida: true,
+				estado: true,
 				embarcacion: {
 					select: {
 						...CAMPOS_PUBLICOS_EMBARCACION,
