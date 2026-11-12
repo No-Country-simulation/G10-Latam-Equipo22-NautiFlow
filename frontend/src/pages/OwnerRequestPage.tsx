@@ -43,15 +43,17 @@ export function OwnerRequestPage() {
         <span className={`status-mark status-${request.status.toLowerCase()}`}>{statusLabels[request.status]}</span>
       </div>
       {request.reviewNote && <p className="review-note">Observación de la agencia: {request.reviewNote}</p>}
-      {request.embarcaciones.map((boat) => (
-        <article className="request-boat" key={boat.id}>
-          <h2>{boat.nombre}</h2>
-          <p>Matrícula {boat.matricula} · Capacidad {boat.capacidad} pasajeros</p>
-          <p>Zonas: {boat.zonas.map(({ zona }) => zona.nombre).join(', ')}</p>
-          <span className={`status-mark status-${boat.estado.toLowerCase()}`}>{boat.estado}</span>
-        </article>
-      ))}
-      <section className="request-documents">
+      <div id="flota">
+        {request.embarcaciones.map((boat) => (
+          <article className="request-boat" key={boat.id}>
+            <h2>{boat.nombre}</h2>
+            <p>Matrícula {boat.matricula} · Capacidad {boat.capacidad} pasajeros</p>
+            <p>Zonas: {boat.zonas.map(({ zona }) => zona.nombre).join(', ')}</p>
+            <span className={`status-mark status-${boat.estado.toLowerCase()}`}>{boat.estado}</span>
+          </article>
+        ))}
+      </div>
+      <section className="request-documents" id="documentos">
         <h2>Documentación</h2>
         {request.documents.map((document) => (
           <div className="document-row" key={document.id}>

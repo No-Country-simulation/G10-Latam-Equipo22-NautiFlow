@@ -55,6 +55,18 @@ const AdminTripsPage = lazy(() =>
 const PublicReviewPage = lazy(() =>
   import('./pages/PublicReviewPage').then((m) => ({ default: m.PublicReviewPage })),
 );
+const OwnerFlotaPage = lazy(() =>
+  import('./pages/OwnerFlotaPage').then((m) => ({ default: m.OwnerFlotaPage })),
+);
+const OwnerRetornosPage = lazy(() =>
+  import('./pages/OwnerRetornosPage').then((m) => ({ default: m.OwnerRetornosPage })),
+);
+const OwnerSalidasPage = lazy(() =>
+  import('./pages/OwnerSalidasPage').then((m) => ({ default: m.OwnerSalidasPage })),
+);
+const OwnerProfilePage = lazy(() =>
+  import('./pages/OwnerProfilePage').then((m) => ({ default: m.OwnerProfilePage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -100,6 +112,46 @@ export const router = createBrowserRouter([
           <ProtectedRoute role="OWNER">
             <Suspended>
               <OwnerRequestPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'owner/flota',
+        element: (
+          <ProtectedRoute role="OWNER">
+            <Suspended>
+              <OwnerFlotaPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'owner/retornos',
+        element: (
+          <ProtectedRoute role="OWNER">
+            <Suspended>
+              <OwnerRetornosPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'owner/salidas',
+        element: (
+          <ProtectedRoute role="OWNER">
+            <Suspended>
+              <OwnerSalidasPage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'owner/perfil',
+        element: (
+          <ProtectedRoute role="OWNER">
+            <Suspended>
+              <OwnerProfilePage />
             </Suspended>
           </ProtectedRoute>
         ),
