@@ -4,6 +4,8 @@ import type { AuthUser } from './auth.types';
 export interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
+  sessionError: boolean;
+  refreshSession: () => Promise<void>;
   login: (email: string, password: string) => Promise<AuthUser>;
   registerOwner: (formData: FormData) => Promise<void>;
   logout: () => Promise<void>;

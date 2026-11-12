@@ -29,6 +29,8 @@ function mockAuth(user: AuthUser | null) {
   vi.spyOn(useAuthModule, 'useAuth').mockReturnValue({
     user,
     loading: false,
+    sessionError: false,
+    refreshSession: vi.fn(),
     login: vi.fn(),
     logout: mockLogout,
     registerOwner: vi.fn(),
