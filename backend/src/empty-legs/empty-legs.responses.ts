@@ -6,8 +6,8 @@ export class EmptyLegCreadoDto {
   @ApiProperty({ type: String, format: 'uuid' })
   id: string;
 
-  @ApiProperty({ type: String, format: 'uuid' })
-  tripId: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true, description: 'Viaje de origen; nulo en retornos publicados por el lanchero.' })
+  tripId: string | null;
 
   @ApiProperty({ type: String, format: 'uuid' })
   embarcacionId: string;
@@ -99,8 +99,8 @@ export class EmptyLegListItemDto {
   @ApiProperty({ type: EmbarcacionEmptyLegDto })
   embarcacion: EmbarcacionEmptyLegDto;
 
-  @ApiProperty({ type: TripEmptyLegRefDto })
-  trip: TripEmptyLegRefDto;
+  @ApiProperty({ type: TripEmptyLegRefDto, nullable: true })
+  trip: TripEmptyLegRefDto | null;
 }
 
 export class PaginatedEmptyLegsDto {

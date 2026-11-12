@@ -14,7 +14,7 @@ export class PublicSalidasController {
 	constructor(@Inject(SalidasService) private readonly salidasService: SalidasService) {}
 
 	@Get()
-	@ApiOperation({ summary: 'Lista salidas PROGRAMADAS futuras de lanchas elegibles' })
+	@ApiOperation({ summary: 'Salidas públicas futuras (excluye completadas; filtro por estado)' })
 	@ApiOkResponse({
 		type: PaginatedSalidasPublicasDto,
 		description: 'Cada item incluye lancha pública, rating, tramos y disponibilidad.',

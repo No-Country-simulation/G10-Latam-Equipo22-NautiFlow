@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EstadoTramo, TipoTramo } from '../generated/prisma/client.js';
+import { EstadoSalida, EstadoTramo, TipoTramo } from '../generated/prisma/client.js';
 import { PageMetaDto } from '../common/dto/page-meta.dto.js';
 import {
   EmbarcacionDetallePublicaDto,
@@ -43,6 +43,9 @@ export class SalidaPublicaItemDto {
   @ApiProperty({ example: '2026-11-08T20:47:48.000Z' })
   fechaSalida: Date;
 
+  @ApiProperty({ enum: EstadoSalida })
+  estado: EstadoSalida;
+
   @ApiProperty({ type: EmbarcacionPublicaDto })
   embarcacion: EmbarcacionPublicaDto;
 
@@ -65,6 +68,9 @@ export class SalidaPublicaDetalleDto {
 
   @ApiProperty({ example: '2026-11-08T20:47:48.000Z' })
   fechaSalida: Date;
+
+  @ApiProperty({ enum: EstadoSalida })
+  estado: EstadoSalida;
 
   @ApiProperty({
     type: EmbarcacionDetallePublicaDto,

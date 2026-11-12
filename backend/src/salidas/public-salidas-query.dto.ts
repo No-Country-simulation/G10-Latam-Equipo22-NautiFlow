@@ -1,8 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
+import { EstadoSalida } from '../generated/prisma/client.js';
 
 export class PublicSalidasQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    enum: EstadoSalida,
+    description: 'Estado exacto de la salida; por defecto excluye las COMPLETADA',
+  })
+  @IsOptional()
+  @IsEnum(EstadoSalida)
+  estado?: EstadoSalida;
+
   @ApiPropertyOptional({ description: 'ID de la zona que debe cubrir la lancha' })
   @IsOptional()
   @IsUUID()
