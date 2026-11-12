@@ -10,7 +10,7 @@ services:
     runtime: node
     plan: free
     rootDir: backend
-    branch: develop
+    branch: main
     # NODE_ENV=production llega al build y npm omite devDependencies;
     # nest, prisma y tsx (seed) viven ahí, por eso --include=dev.
     # Render free no soporta preDeployCommand: migraciones y seed
