@@ -13,6 +13,7 @@ import {
 import { api } from '../services/api';
 import { WavyLoader } from '../components/WavyLoader';
 import { LiquidCursorEffect } from '../components/LiquidCursorEffect';
+import { useReveal } from '../hooks/useReveal';
 
 const boatImages = ['/boat1.jpg', '/boat2.jpg', '/boat3.jpg'];
 
@@ -332,6 +333,9 @@ export function LandingPage() {
   const [experiences, setExperiences] = useState<ExperienceReview[]>(FALLBACK_EXPERIENCES);
   const [tripsByOperator, setTripsByOperator] = useState<Record<string, UpcomingTrip[]>>({});
   const [visibleBoats, setVisibleBoats] = useState(8);
+  const networkRef = useReveal<HTMLElement>();
+  const howRef = useReveal<HTMLElement>();
+  const experiencesRef = useReveal<HTMLElement>();
 
   useEffect(() => {
     let active = true;
@@ -486,7 +490,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="nf-network-section" id="network" aria-labelledby="fleet-title">
+      <section
+        ref={networkRef}
+        className="nf-network-section"
+        id="network"
+        aria-labelledby="fleet-title"
+      >
         <div className="nf-section-container">
           <div className="nf-section-header">
             <p className="nf-section-eyebrow">Nuestra red</p>
@@ -540,7 +549,12 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="nf-how-section" id="how-it-works" aria-labelledby="how-title">
+      <section
+        ref={howRef}
+        className="nf-how-section"
+        id="how-it-works"
+        aria-labelledby="how-title"
+      >
         <div className="nf-section-container">
           <div className="nf-section-header">
             <p className="nf-section-eyebrow">Cómo funciona</p>
@@ -589,6 +603,7 @@ export function LandingPage() {
       </section>
 
       <section
+        ref={experiencesRef}
         className="nf-experiences-section"
         id="experiences"
         aria-labelledby="experiences-title"

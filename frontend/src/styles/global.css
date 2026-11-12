@@ -4368,6 +4368,18 @@ html {
   pointer-events: none;
 }
 
+/* ===== Aparición suave de secciones al hacer scroll ===== */
+[data-reveal='hidden'] {
+  opacity: 0;
+  transform: translateY(40px) scale(0.96);
+}
+
+[data-reveal='visible'] {
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 /* ===== Accesibilidad: movimiento reducido ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
