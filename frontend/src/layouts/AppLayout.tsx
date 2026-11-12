@@ -1,7 +1,6 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Bell,
   CalendarClock,
   ChevronDown,
   ClipboardList,
@@ -14,10 +13,12 @@ import {
   Search,
   Ship,
   Star,
+  UserRound,
 } from 'lucide-react';
 import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
 import type { UserRole } from '../auth/auth.types';
+import { NotificationBell } from '../components/NotificationBell';
 
 const roleSectionLabel: Record<UserRole, string> = {
   ADMIN: 'ADMINISTRACIÓN',
@@ -137,8 +138,12 @@ export function AppLayout() {
         ? 'Búsqueda y asignación'
         : location.pathname.includes('retornos')
         ? 'Retornos vacíos'
-        : location.pathname.includes('resenas')
+        : location.pathname.includes('resenas') || location.pathname.includes('estado')
         ? 'Reseñas'
+        : location.pathname.includes('salidas')
+        ? 'Salidas y tramos'
+        : location.pathname.includes('perfil')
+        ? 'Mi perfil'
         : location.pathname.includes('viajes')
         ? 'Gestión de viajes'
         : location.pathname.includes('solicitud')
@@ -160,10 +165,10 @@ export function AppLayout() {
         : [
             { to: '/owner/dashboard', label: 'Dashboard', icon: LayoutGrid, exact: true },
             { to: '/owner/solicitud', label: 'Verificación', icon: FileCheck2 },
-            { to: '/owner/solicitud#flota', label: 'Gestión de flota', icon: Ship },
-            { to: '/owner/solicitud#documentos', label: 'Solicitudes', icon: ClipboardList },
-            { to: '/owner/dashboard#viajes', label: 'Gestión de viajes', icon: CalendarClock },
-            { to: '/owner/dashboard#retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/owner/flota', label: 'Mi flota', icon: Ship },
+            { to: '/owner/salidas', label: 'Salidas', icon: CalendarClock },
+            { to: '/owner/retornos', label: 'Retornos vacíos', icon: RotateCcw },
+            { to: '/owner/perfil', label: 'Mi perfil', icon: UserRound },
             { to: '/estado', label: 'Reseñas', icon: Star },
           ];
 
@@ -225,9 +230,7 @@ export function AppLayout() {
             </div>
             <div className="workspace-topbar-actions">
               <span className="workspace-demo-pill">Demo</span>
-              <Link to={dashboardPath} className="workspace-notif-btn" aria-label="Notificaciones">
-                <Bell size={16} aria-hidden="true" />
-              </Link>
+              <NotificationBell />
             </div>
           </header>
 

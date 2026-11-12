@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CalendarCheck,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  FileCheck2,
   RotateCcw,
   Ship,
   Star,
@@ -13,6 +15,7 @@ import { useAuth } from '../auth/useAuth';
 import type { UserRole } from '../auth/auth.types';
 import { api } from '../services/api';
 import { WavyLoader } from '../components/WavyLoader';
+import type { Paginated } from '../types/api';
 
 interface KpiItem {
   label: string;
@@ -50,6 +53,38 @@ interface AdminDashboardData {
   actividadReciente: EventoActividad[];
 }
 
+interface OwnerKpiData {
+  totalBoats: number;
+  verificadas: number;
+  solicitudesPendientes: boolean;
+  retornosDisponibles: number;
+  viajesProgramados: number;
+  viajesCompletados: number;
+  docsAprobados: number;
+  docsTotal: number;
+}
+
+interface OwnerBoatKpi {
+  estado: string;
+}
+
+interface OwnerSolicitudKpi {
+  status: string;
+  documents: Array<{ status: string }>;
+}
+
+interface CountMeta {
+  meta: { total: number };
+}
+
+interface AdminRetornoRow {
+  id: string;
+  origin: string;
+  destination: string;
+  scheduledAt: string;
+  embarcacion?: { nombre: string } | null;
+}
+
 const DEFAULT_WEEK_DAYS: ActividadSemanalItem[] = [
   { key: 'lun', label: 'L', count: 0 },
   { key: 'mar', label: 'M', count: 0 },
@@ -63,34 +98,63 @@ const DEFAULT_WEEK_DAYS: ActividadSemanalItem[] = [
 export function RoleDashboardPage({ role }: { role: UserRole }) {
   const { user } = useAuth();
   const [adminData, setAdminData] = useState<AdminDashboardData | null>(null);
-  const [loading, setLoading] = useState(role === 'ADMIN');
+  const [adminRetornos, setAdminRetornos] = useState<AdminRetornoRow[]>([]);
+  const [ownerKpis, setOwnerKpis] = useState<OwnerKpiData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (role === 'ADMIN') {
-      let isMounted = true;
-      api
-        .get<AdminDashboardData>('/admin/dashboard/resumen')
-        .then((data) => {
-          if (isMounted) {
-            setAdminData(data);
-            setLoading(false);
-          }
+      Promise.all([
+        api.get<AdminDashboardData>('/admin/dashboard/resumen'),
+        api.get<Paginated<AdminRetornoRow>>('/admin/empty-legs?status=AVAILABLE&limit=4'),
+      ])
+        .then(([resumen, retornos]) => {
+          if (!isMounted) return;
+          setAdminData(resumen);
+          setAdminRetornos(retornos.data);
         })
-        .catch(() => {
+        .catch(() => undefined)
+        .finally(() => {
           if (isMounted) setLoading(false);
         });
-
-      return () => {
-        isMounted = false;
-      };
+    } else {
+      Promise.all([
+        api.get<OwnerBoatKpi[]>('/boats/mine'),
+        api.get<OwnerSolicitudKpi>('/owners/me/solicitud'),
+        api.get<CountMeta>('/owners/me/empty-legs?status=AVAILABLE&limit=1'),
+        api.get<CountMeta>('/owners/me/salidas?estado=PROGRAMADA&limit=1'),
+        api.get<CountMeta>('/owners/me/salidas?estado=COMPLETADA&limit=1'),
+      ])
+        .then(([boats, solicitud, retornos, programadas, completadas]) => {
+          if (!isMounted) return;
+          setOwnerKpis({
+            totalBoats: boats.length,
+            verificadas: boats.filter((b) => b.estado === 'VERIFICADA').length,
+            solicitudesPendientes: solicitud.status !== 'APPROVED',
+            retornosDisponibles: retornos.meta.total,
+            viajesProgramados: programadas.meta.total,
+            viajesCompletados: completadas.meta.total,
+            docsAprobados: solicitud.documents.filter((d) => d.status === 'APPROVED').length,
+            docsTotal: solicitud.documents.length,
+          });
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [role]);
 
   if (!user) return null;
 
   const firstName = user.name.split(' ')[0];
 
-  // Métricas con datos reales del backend
   const topKpis: KpiItem[] =
     role === 'ADMIN'
       ? [
@@ -118,19 +182,28 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
           },
         ]
       : [
-          { label: 'Lanchas registradas', value: '1', icon: Ship },
+          {
+            label: 'Lanchas registradas',
+            value: String(ownerKpis?.totalBoats ?? '—'),
+            icon: Ship,
+          },
           {
             label: 'Verificadas',
-            value: user.ownerStatus === 'APPROVED' ? '1' : '0',
+            value: ownerKpis ? String(ownerKpis.verificadas) : '—',
             icon: CheckCircle2,
+            featured: Boolean(ownerKpis && ownerKpis.verificadas > 0),
           },
           {
-            label: 'Solicitudes pendientes',
-            value: user.ownerStatus === 'APPROVED' ? '0' : '1',
+            label: 'Solicitud de lanchero',
+            value: ownerKpis ? (ownerKpis.solicitudesPendientes ? 'Pendiente' : 'Aprobada') : '—',
             icon: ClipboardList,
-            featured: true,
+            featured: Boolean(ownerKpis?.solicitudesPendientes),
           },
-          { label: 'Retornos activos', value: '1', icon: RotateCcw },
+          {
+            label: 'Retornos disponibles',
+            value: ownerKpis ? String(ownerKpis.retornosDisponibles) : '—',
+            icon: RotateCcw,
+          },
         ];
 
   const bottomKpis: KpiItem[] =
@@ -154,9 +227,26 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
           },
         ]
       : [
-          { label: 'Viajes programados', value: '1', icon: CalendarClock },
-          { label: 'Viajes completados', value: '1', icon: CalendarCheck },
-          { label: 'Calificación promedio', value: '4.8 ★', icon: Star },
+          {
+            label: 'Salidas programadas',
+            value: ownerKpis ? String(ownerKpis.viajesProgramados) : '—',
+            icon: CalendarClock,
+          },
+          {
+            label: 'Salidas completadas',
+            value: ownerKpis ? String(ownerKpis.viajesCompletados) : '—',
+            icon: CalendarCheck,
+          },
+          {
+            label: 'Documentación aprobada',
+            value: ownerKpis ? `${ownerKpis.docsAprobados}/${ownerKpis.docsTotal}` : '—',
+            subtitle: ownerKpis
+              ? ownerKpis.docsAprobados === ownerKpis.docsTotal
+                ? 'Todo al día con la agencia'
+                : `${ownerKpis.docsTotal - ownerKpis.docsAprobados} en revisión o pendientes`
+              : undefined,
+            icon: FileCheck2,
+          },
         ];
 
   const chartData = adminData?.actividadSemanal?.length
@@ -301,6 +391,48 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
               </div>
             </section>
           </div>
+
+          {role === 'ADMIN' && (
+            <section className="nf-panel nf-recent-panel" aria-labelledby="admin-retornos-title" style={{ marginTop: '1.25rem' }}>
+              <div className="nf-panel-header">
+                <div>
+                  <h2 id="admin-retornos-title">Retornos vacíos disponibles</h2>
+                  <span className="nf-panel-desc">Publicados por lancheros, listos para ofrecer a la red</span>
+                </div>
+                <Link to="/admin/retornos" className="nf-period-pill" style={{ textDecoration: 'none' }}>
+                  Ir a la bolsa
+                </Link>
+              </div>
+
+              {adminRetornos.length === 0 ? (
+                <p className="empty-activity-text">No hay retornos disponibles ahora mismo.</p>
+              ) : (
+                <div className="recent-activity-list">
+                  {adminRetornos.map((el) => (
+                    <div key={el.id} className="recent-event-item">
+                      <div className="event-bullet" />
+                      <div className="event-content">
+                        <div className="event-title-row">
+                          <strong className="event-title">
+                            {el.origin} → {el.destination}
+                          </strong>
+                          <span className="event-time">
+                            {new Date(el.scheduledAt).toLocaleString('es-AR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <p className="event-desc">{el.embarcacion?.nombre ?? 'Lancha propia del lanchero'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
     </section>
