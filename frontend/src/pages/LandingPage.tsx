@@ -43,6 +43,31 @@ interface PublicBoatPage {
   data: PublicBoat[];
 }
 
+interface PublicSalidaItem {
+  id: string;
+  fechaSalida: string;
+  estado: string;
+  embarcacion: {
+    propietario?: {
+      whatsappPhone?: string | null;
+      user?: { name?: string };
+    };
+  };
+}
+
+interface UpcomingTrip {
+  fechaSalida: string;
+  estado: string;
+}
+
+const salidaEstadoLabels: Record<string, string> = {
+  PROGRAMADA: 'Programada',
+  CANCELADA: 'Cancelada',
+  COMPLETADA: 'Completada',
+};
+
+const AGENCY_WHATSAPP = '5491100000000';
+
 interface ExperienceReview {
   id: string;
   rating: number;
@@ -139,12 +164,36 @@ function AudienceCard({
   );
 }
 
-function BoatCard({ boat, index }: { boat: PublicBoat; index: number }) {
+function BoatCard({
+  boat,
+  index,
+  trips = [],
+}: {
+  boat: PublicBoat;
+  index: number;
+  trips?: UpcomingTrip[];
+}) {
   const zonesLabel =
     boat.zonas.map(({ zona }) => zona.nombre).join(' · ') || 'Delta del Tigre';
   const operatorName = boat.propietario?.user?.name;
   const ratingLabel =
     boat.rating.average === null ? '4.8' : boat.rating.average.toFixed(1);
+  const initials = operatorName
+    ? operatorName
+        .split(' ')
+        .map((word) => word[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'NF';
+  const waDigits = boat.propietario?.whatsappPhone?.replace(/\D/g, '') || '';
+  const waHref = `https://wa.me/${waDigits || AGENCY_WHATSAPP}?text=${encodeURIComponent(
+    `Hola, quiero coordinar un viaje en el Delta. Vi la lancha ${boat.nombre}${
+      operatorName ? ` de ${operatorName}` : ''
+    } en NautiFlow.`,
+  )}`;
+  const upcoming = trips.filter((trip) => trip.estado === 'PROGRAMADA').slice(0, 2);
 
   return (
     <article className="nf-boat-card">
@@ -161,11 +210,16 @@ function BoatCard({ boat, index }: { boat: PublicBoat; index: number }) {
       </div>
       <div className="nf-boat-body">
         <div className="nf-boat-header-row">
-          <div>
-            <h3>{boat.nombre}</h3>
-            <p className="nf-boat-operator">
-              {operatorName ? `Op. ${operatorName}` : 'Operador verificado del Delta'}
-            </p>
+          <div className="nf-boat-identity">
+            <span className="nf-boat-avatar" aria-hidden="true">
+              {initials}
+            </span>
+            <div>
+              <h3>{boat.nombre}</h3>
+              <p className="nf-boat-operator">
+                {operatorName ? `Op. ${operatorName}` : 'Operador verificado del Delta'}
+              </p>
+            </div>
           </div>
           <span
             className="nf-boat-rating"
@@ -191,6 +245,44 @@ function BoatCard({ boat, index }: { boat: PublicBoat; index: number }) {
         {boat.descripcion && (
           <p className="nf-boat-description">{boat.descripcion}</p>
         )}
+
+        <div className="nf-boat-trips">
+          <p className="nf-boat-trips-title">Próximos viajes</p>
+          {upcoming.length === 0 ? (
+            <p className="nf-boat-trips-empty">Sin viajes publicados por ahora.</p>
+          ) : (
+            <ul className="nf-boat-trips-list">
+              {upcoming.map((trip) => (
+                <li key={trip.fechaSalida} className="nf-boat-trip-row">
+                  <span className="nf-boat-trip-date">
+                    {new Date(trip.fechaSalida).toLocaleString('es-AR', {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  <span
+                    className={`nf-boat-chip${trip.estado === 'PROGRAMADA' ? ' is-programada' : ''}`}
+                  >
+                    {salidaEstadoLabels[trip.estado] ?? trip.estado}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <a
+          className="nf-boat-wa"
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <MessageCircle size={15} aria-hidden="true" />
+          <span>Coordinar por WhatsApp</span>
+        </a>
       </div>
     </article>
   );
@@ -238,17 +330,38 @@ export function LandingPage() {
   const [loadingBoats, setLoadingBoats] = useState(true);
   const [boatsError, setBoatsError] = useState(false);
   const [experiences, setExperiences] = useState<ExperienceReview[]>(FALLBACK_EXPERIENCES);
+  const [tripsByOperator, setTripsByOperator] = useState<Record<string, UpcomingTrip[]>>({});
+  const [visibleBoats, setVisibleBoats] = useState(8);
 
   useEffect(() => {
     let active = true;
 
-    api
-      .get<PublicBoatPage>('/public/boats?limit=6')
-      .then(async (page) => {
+    Promise.all([
+      api.get<PublicBoatPage>('/public/boats?limit=24'),
+      api
+        .get<{ data: PublicSalidaItem[] }>('/public/salidas?limit=100')
+        .catch(() => ({ data: [] as PublicSalidaItem[] })),
+    ])
+      .then(async ([page, salidasPage]) => {
         if (!active) return;
         setBoats(page.data);
 
-        const detailPromises = page.data.map((boat) =>
+        const grouped: Record<string, UpcomingTrip[]> = {};
+        for (const salida of salidasPage.data) {
+          if (salida.estado !== 'PROGRAMADA') continue;
+          const key = salida.embarcacion.propietario?.user?.name;
+          if (!key) continue;
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push({ fechaSalida: salida.fechaSalida, estado: salida.estado });
+        }
+        for (const list of Object.values(grouped)) {
+          list.sort(
+            (a, b) => new Date(a.fechaSalida).getTime() - new Date(b.fechaSalida).getTime(),
+          );
+        }
+        setTripsByOperator(grouped);
+
+        const detailPromises = page.data.slice(0, 6).map((boat) =>
           api
             .get<PublicBoatDetail>(`/public/boats/${boat.id}`)
             .catch(() => null),
@@ -395,11 +508,29 @@ export function LandingPage() {
               No pudimos cargar las embarcaciones. Volvé a intentarlo más tarde.
             </p>
           ) : boats.length ? (
-            <div className="nf-boat-grid">
-              {boats.map((boat, index) => (
-                <BoatCard key={boat.id} boat={boat} index={index} />
-              ))}
-            </div>
+            <>
+              <div className="nf-boat-grid">
+                {boats.slice(0, visibleBoats).map((boat, index) => (
+                  <BoatCard
+                    key={boat.id}
+                    boat={boat}
+                    index={index}
+                    trips={tripsByOperator[boat.propietario?.user?.name ?? '']}
+                  />
+                ))}
+              </div>
+              {boats.length > visibleBoats && (
+                <div className="nf-fleet-more">
+                  <button
+                    type="button"
+                    className="button button-ghost"
+                    onClick={() => setVisibleBoats((prev) => prev + 8)}
+                  >
+                    Ver más embarcaciones ({boats.length - visibleBoats})
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <p className="nf-fleet-empty">
               Todavía no hay embarcaciones verificadas para mostrar. La agencia
