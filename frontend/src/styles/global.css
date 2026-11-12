@@ -4187,7 +4187,7 @@ html {
 
 .nf-experience-meta {
   margin: auto 0 0;
-  color: #8eb3ad;
+  color: #a7c9c4;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -4497,4 +4497,111 @@ button.workspace-notif-btn {
   padding: 1rem 0.9rem;
   font-size: 0.78rem;
   color: #6b7280;
+}
+
+/* Boat card: avatar, proximos viajes y CTA WhatsApp */
+.nf-boat-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.nf-boat-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #145a52;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nf-boat-trips {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px dashed #e2ebe8;
+}
+
+.nf-boat-trips-title {
+  margin: 0 0 0.45rem;
+  color: #0f2926;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nf-boat-trips-empty {
+  margin: 0;
+  color: #7d918c;
+  font-size: 0.76rem;
+}
+
+.nf-boat-trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nf-boat-trip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.nf-boat-trip-date {
+  color: #3d544f;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.nf-boat-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.16rem 0.55rem;
+  border-radius: 999px;
+  background: #eef4f2;
+  color: #4f6460;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.nf-boat-chip.is-programada {
+  background: #e7f4ef;
+  color: #0f5f53;
+}
+
+.nf-boat-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 9px;
+  background: #1f9d55;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 140ms ease;
+}
+
+.nf-boat-wa:hover {
+  background: #178046;
+}
+
+.nf-fleet-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.75rem;
 }
