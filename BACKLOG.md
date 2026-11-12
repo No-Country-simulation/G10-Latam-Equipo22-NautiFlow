@@ -59,6 +59,9 @@ Prioridades: **Alta**, **Media**, **Baja**. Milestones por etapa del [ROADMAP](.
 | US-16 | Landing pública con reputación | Media | historia-US-16, frontend |
 | US-12 | Registrar tramo vacío | Media | historia-US-12, backend |
 | US-13 | Contactar por WhatsApp (`wa.me` con mensaje prearmado) | Media | historia-US-13, frontend |
+| US-19 | Retornos del lanchero: CRUD propio y notificaciones internas | Alta | historia-US-19, backend |
+| US-20 | Panel del lanchero: flota, retornos, salidas, perfil y campana de notificaciones | Alta | historia-US-20, fullstack |
+| US-21 | Landing: próximos viajes por lanchero, avatar de embarcación y CTA WhatsApp | Media | historia-US-21, frontend |
 
 ## Etapa 5 — Calidad y entrega
 

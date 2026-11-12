@@ -24,6 +24,7 @@ JSON conservan sus nombres hasta TECH-14, así que no cambió ninguna API).
 | `salidas` | `Salida` | salidas publicables del catálogo |
 | `tramos` | `Tramo` | ida/vuelta de una salida (precio y cupo) |
 | `tramos_vacios` | `EmptyLeg` | retornos sin pasajeros |
+| `notificaciones` | `Notification` | avisos internos por usuario |
 | `reservas` | `Reserva` | solicitudes de reserva de turistas |
 | `zonas` | `Zona` | zonas de cobertura |
 | `embarcaciones` | `Embarcacion` | lanchas del lanchero |
@@ -115,11 +116,11 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 | Trip | cliente, admin creador, fecha/hora, pasajeros, origen/destino, estado, embarcación opcional, salida/tramo opcional |
 | ReviewToken | trip único, hash SHA-256, expiración, uso y creación |
 | Review | trip único, embarcación opcional, rating (1–5), comentario |
-| EmptyLeg | `tripId` de origen, `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado (legacy) |
+| EmptyLeg | `tripId` de origen **opcional** (los retornos publicados por el lanchero no tienen viaje), `embarcacionId`, origen/destino invertidos, fecha/hora estimada, estado |
 | Salida | embarcación, fecha/hora de salida, estado, admin creador; contiene tramos |
 | Tramo | salida, tipo IDA/VUELTA, origen/destino, fecha/hora, cupo, precio en centavos, `sinTuristas`, estado |
 | Reserva | tramo y salida, contacto del turista (nombre, teléfono, email opcional), pasajeros, mensaje, snapshot de origen/destino/fecha/precio, estado, `cupoDescontado`, viaje vinculado, admin revisor y nota |
-| Notification | `userId`, tipo, canal, resumen, estado de envío, fecha |
+| Notification | `userId` (FK `usuarios`, `onDelete: Cascade`), `title`, `message`, `read` (default `false`), `createdAt` con índice `(usuarioId, leida, createdAt)` |
 
 ## Relaciones previstas
 
@@ -127,7 +128,10 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Una `Embarcacion` cubre varias `Zona` (M:N) y tendrá varios documentos.
 - Una `Embarcacion` realizará varios `Trip` y podrá recibir varias reseñas.
 - Un `Trip` completado habilita como máximo una `Review`.
-- Un `EmptyLeg` se origina en un viaje de ida y se asocia a la embarcación que regresa (legacy).
+- Un `EmptyLeg` puede nacer de un viaje de ida (admin, `tripId` seteado) o ser publicado por el
+  lanchero con su propia embarcación (`tripId` `null`); en ambos casos se asocia a la embarcación
+  que regresa.
+- Una `Notification` pertenece a un `User` y se marca con `read`/`leida` al consultarla.
 - Una `Salida` tiene uno o más `Tramo` (ida y vuelta opcional).
 - Un `Trip` puede vincularse opcionalmente a una `Salida` y `Tramo` cuando nace de una reserva.
 - Una `Reserva` apunta a un `Tramo` y a su `Salida`; al confirmarse crea un `Trip` con
@@ -161,8 +165,10 @@ Relación M:N con PK compuesta (`embarcacionId`, `zonaId`) y cascada en ambas FK
 - Todo documento registra revisor, fecha y decisión.
 - `Review.rating` tiene un CHECK SQL de 1 a 5 y una FK a `Embarcacion`.
 - Documentos de máximo 5 MiB se guardan como `BYTEA`; APIs de listado no devuelven el contenido.
-- El tramo vacío invierte el recorrido del viaje y reutiliza su embarcación; solo se registra
-  para viajes `ASSIGNED`/`CONFIRMED`, con regreso posterior a la salida y un tramo activo por viaje.
+- El tramo vacío invierte el recorrido del viaje y reutiliza su embarcación; cuando nace de un
+  viaje solo se registra para `ASSIGNED`/`CONFIRMED`, con regreso posterior a la salida y un tramo
+  activo por viaje. Los retornos que publica el lanchero (`tripId` `null`) validan fecha futura y
+  un solo retorno activo por embarcación.
 - El cupo de un `Tramo` nunca baja de 0: el descuento es un `updateMany` condicional
   (`estado = DISPONIBLE` y `cupo ≥ cantidad`) dentro de la transacción de confirmación, y el
   descuento solo ocurre en reservas `CONFIRMADA` (`cupoDescontado = true`).

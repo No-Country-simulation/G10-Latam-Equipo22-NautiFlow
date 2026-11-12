@@ -66,6 +66,14 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | PATCH | `/owners/me` | OWNER | Actualizar nombre, teléfono o WhatsApp propios |
 | POST | `/owners/me/documents` | OWNER | Reenviar documentación y volver la solicitud a pendiente |
 | POST | `/owners/me/solicitud/reabrir` | OWNER | Reabrir una solicitud rechazada |
+| GET | `/owners/me/empty-legs` | OWNER | Retornos propios paginados, con filtro opcional de estado |
+| POST | `/owners/me/empty-legs` | OWNER | Publicar un retorno en vacío de sus embarcaciones |
+| PATCH | `/owners/me/empty-legs/:id` | OWNER | Editar fecha o estado (solo `AVAILABLE`/`CLOSED`) de su retorno |
+| GET | `/owners/me/salidas` | OWNER | Salidas de sus embarcaciones con filtros y paginación |
+| PATCH | `/owners/me/salidas/:id` | OWNER | Actualizar estado o fecha de su salida (desplaza los tramos) |
+| PATCH | `/owners/me/salidas/:salidaId/tramos/:tramoId` | OWNER | Actualizar un tramo de su salida |
+| GET | `/notifications` | Autenticado | Notificaciones del usuario con contador de no leídas |
+| PATCH | `/notifications/:id/read` | Autenticado | Marcar una notificación propia como leída |
 | GET | `/zones` | Público | Zonas de cobertura activas |
 | GET | `/zones/admin` | ADMIN | Todas las zonas, activas e inactivas |
 | POST | `/zones` | ADMIN | Crear zona de cobertura |
@@ -89,6 +97,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
 | POST | `/admin/empty-legs` | ADMIN | Registrar tramo vacío de regreso |
 | GET | `/admin/empty-legs` | ADMIN | Listar tramos vacíos con filtros y paginación |
+| PATCH | `/admin/empty-legs/:id/status` | ADMIN | Cambiar el estado de un retorno (notifica al lanchero) |
 | POST | `/admin/salidas` | ADMIN | Crear salida con tramos (ida/vuelta) |
 | GET | `/admin/salidas` | ADMIN | Listar salidas con filtros y paginación |
 | GET | `/admin/salidas/:id` | ADMIN | Detalle de salida con tramos |
@@ -211,7 +220,33 @@ posterior a la salida del viaje. Un viaje admite un solo tramo activo (todo lo q
 
 Lista paginada ordenada por hora de regreso. `status` filtra por estado (por defecto
 `AVAILABLE`); `page` y `limit` siguen la convención general. Cada fila incluye la lancha, el
-lanchero y los datos del viaje de origen.
+lanchero y, si existe, los datos del viaje de origen (`trip` puede ser `null` cuando el retorno
+lo publicó el lanchero).
+
+`PATCH /api/v1/admin/empty-legs/:id/status` recibe `{ "status": "AVAILABLE" | "OFFERED" |
+"ASSIGNED" | "CLOSED" }`, actualiza el estado y crea una notificación para el lanchero dueño de
+la embarcación.
+
+### Retornos del lanchero (`/owners/me/empty-legs`, OWNER)
+
+`GET` lista los retornos propios (sin filtro de estado se devuelven todos) con `page`, `limit` y
+`status`. `POST` crea un retorno sin viaje de origen con JSON:
+
+```json
+{
+  "embarcacionId": "uuid",
+  "origin": "Delta del Tigre",
+  "destination": "Tigre Centro",
+  "scheduledAt": "2026-12-01T18:00:00.000Z"
+}
+```
+
+La embarcación debe pertenecer al lanchero y `scheduledAt` debe ser futuro; cada embarcación
+admite un solo retorno activo (todo lo que no esté `CLOSED`) y repetirlo responde `409`. Al
+publicar se notifica a los administradores. `PATCH /:id` acepta `scheduledAt` (futuro) y/o
+`status`; el lanchero solo puede alternar `AVAILABLE`/`CLOSED` y recibe `400` si intenta modificar
+un retorno `OFFERED` o `ASSIGNED` (gestión de la agencia). Cada modificación también notifica a
+los administradores.
 
 ## Catálogo de salidas
 
@@ -239,16 +274,19 @@ Reglas:
 - No puede superponerse con otros viajes o salidas de la misma lancha en `TRIP_SLOT_HOURS`. La
   validación cubre `fechaSalida` y cada `fechaHora` de los tramos.
 
-`GET /api/v1/public/salidas` lista salidas `PROGRAMADA` futuras de lanchas elegibles. Filtros:
+`GET /api/v1/public/salidas` lista salidas futuras de lanchas elegibles; por defecto excluye las
+`COMPLETADA` y solo incluye `fechaSalida >= ahora`. Filtros:
 
 | Query | Tipo | Descripción |
 | --- | --- | --- |
 | `zonaId` | UUID | Zona que debe cubrir la lancha |
 | `fechaDesde` / `fechaHasta` | fecha ISO | Rango de fecha de salida |
 | `origen` / `destino` | texto | Filtra por el tramo IDA |
+| `estado` | enum | `PROGRAMADA`, `CANCELADA` o `COMPLETADA` para forzar un estado puntual |
 | `page` / `limit` | entero | Convención general |
 
-Cada item incluye lancha pública, rating de la embarcación, tramos con precio/cupo y un campo
+Cada item incluye `estado`, la lancha pública con su propietario (`embarcacion.propietario.user.name`
+y WhatsApp de contacto), rating, tramos con precio/cupo y un campo
 `disponible` que indica si algún tramo está `DISPONIBLE` con cupo > 0.
 
 `GET /api/v1/public/salidas/:id` devuelve el detalle con las últimas 5 reseñas de la lancha.
@@ -256,6 +294,16 @@ Cada item incluye lancha pública, rating de la embarcación, tramos con precio/
 `PATCH /api/v1/admin/salidas/:id` actualiza `estado` (`PROGRAMADA`, `CANCELADA`, `COMPLETADA`) o
 `fechaSalida` (con re-validación de disponibilidad). Al cambiar `fechaSalida`, todos los tramos se
 desplazan por el mismo delta y se re-validan sus fechas.
+
+### Salidas del lanchero (`/owners/me/salidas`, OWNER)
+
+`GET` lista las salidas de las embarcaciones del lanchero autenticado con `page`, `limit` y
+`estado`. `PATCH /:id` acepta `estado` o `fechaSalida` con las mismas reglas del endpoint admin
+(fecha futura, desplazamiento y re-validación de tramos); crea notificaciones para los
+administradores cuando cambia el estado o la fecha. `PATCH /:salidaId/tramos/:tramoId` actualiza
+`fechaHora`, `cupo`, `precioCentavos` y `estado` de un tramo propio: el estado no puede pasar a
+`RESERVADO` y un tramo `RESERVADO` solo admite cambios de cupo, precio o fecha (cambiar su estado
+responde `400`). Las modificaciones de tramo también notifican a los administradores.
 
 `PATCH /api/v1/admin/salidas/:salidaId/tramos/:tramoId` actualiza campos de un tramo:
 
@@ -357,11 +405,32 @@ con las mismas reglas de restauración.
 }
 ```
 
-## Rutas planificadas no implementadas
+## Notificaciones internas
 
-| Módulo | Método y ruta | Rol | Uso |
-| --- | --- | --- | --- |
-| Notifications | `GET /notifications` | Autenticado | Consultar notificaciones del usuario (stub MVP) |
+`GET /api/v1/notifications` devuelve las últimas 50 notificaciones del usuario autenticado
+ordenadas por `createdAt` descendente, más un contador `unreadCount`:
+
+```json
+{
+  "notifications": [
+    {
+      "id": "uuid",
+      "title": "Retorno publicado",
+      "message": "\"Carlos Ramírez\" publicó un retorno de Tigre Centro a Delta del Tigre…",
+      "read": false,
+      "createdAt": "2026-11-11T13:56:26.365Z"
+    }
+  ],
+  "unreadCount": 2
+}
+```
+
+`PATCH /api/v1/notifications/:id/read` marca una notificación propia como leída (`404` si no
+existe o es de otro usuario). Los eventos que generan notificaciones: publicación/edición de un
+retorno del lanchero → administradores; cambio de estado de un retorno desde el panel admin →
+lanchero dueño; y cambios de fecha/estado de salidas o tramos del lanchero → administradores.
+
+## Sesión (cookie)
 
 El registro/login escriben `nautiflow_session` como cookie `HttpOnly`, con
 `Path=/api/v1` y expiración configurada por `JWT_EXPIRES_IN`; en desarrollo usa `SameSite=Lax` y en producción `SameSite=None; Secure`.
