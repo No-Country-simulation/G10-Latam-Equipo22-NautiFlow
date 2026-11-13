@@ -66,6 +66,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | PATCH | `/owners/me` | OWNER | Actualizar nombre, teléfono o WhatsApp propios |
 | POST | `/owners/me/documents` | OWNER | Reenviar documentación y volver la solicitud a pendiente |
 | POST | `/owners/me/solicitud/reabrir` | OWNER | Reabrir una solicitud rechazada |
+| GET | `/owners/me/reviews` | OWNER | Reseñas de sus lanchas: promedio general, resumen por lancha y paginado |
 | GET | `/owners/me/empty-legs` | OWNER | Retornos propios paginados, con filtro opcional de estado |
 | POST | `/owners/me/empty-legs` | OWNER | Publicar un retorno en vacío de sus embarcaciones |
 | PATCH | `/owners/me/empty-legs/:id` | OWNER | Editar fecha o estado (solo `AVAILABLE`/`CLOSED`) de su retorno |
@@ -93,6 +94,7 @@ automáticamente a `CONFLICTO` y `NO_ENCONTRADO`.
 | PATCH | `/boats/:id` | OWNER | Editar embarcación propia y su cobertura |
 | POST | `/admin/trips` | ADMIN | Registrar solicitud de viaje |
 | GET | `/admin/trips` | ADMIN | Listar viajes paginados con filtros de estado, texto y fechas |
+| PATCH | `/admin/trips/:id` | ADMIN | Editar fecha, origen, destino, pasajeros o datos del cliente |
 | PATCH | `/admin/trips/:id/assign` | ADMIN | Asignar embarcación |
 | PATCH | `/admin/trips/:id/status` | ADMIN | Cambiar estado |
 | POST | `/admin/empty-legs` | ADMIN | Registrar tramo vacío de regreso |
@@ -319,19 +321,44 @@ Al cambiar `fechaHora`, se re-valida la disponibilidad contra otras salidas/viaj
 tramos de la misma salida. El tramo IDA no puede quedar anterior a la salida; el VUELTA debe ser
 posterior.
 
+### Reseñas del lanchero (`/owners/me/reviews`, OWNER)
+
+`GET /api/v1/owners/me/reviews` devuelve las reseñas de las embarcaciones del lanchero
+autenticado, con `page` y `limit` sobre la lista (orden `createdAt` descendente). La respuesta
+incluye:
+
+- `promedio` (number|null) y `total` (number): resumen general de todas sus lanchas.
+- `porLancha[]`: `{ boatId, nombre, promedio, total }` por cada embarcación propia.
+- `data[]` / `meta`: reseñas paginadas con `rating`, `comment`, `createdAt`, la embarcación
+  (`id`, `nombre`) y el viaje (`origin`, `destination`, `scheduledAt`).
+
 ## Listados de viajes, solicitudes y documentos
 
 Los tres listados de la bandeja de operación responden el formato paginado
 `{ "data": [...], "meta": { "page", "limit", "total", "totalPages" } }`.
 
-`GET /api/v1/admin/trips` (ADMIN), ordenado por `scheduledAt` descendente:
+`GET /api/v1/admin/trips` (ADMIN), ordenado por `scheduledAt` descendente (ascendente con
+`scope=upcoming`):
 
 | Query | Tipo | Descripción |
 | --- | --- | --- |
+| `scope` | `active`, `history`, `upcoming` | `active`: PENDING/ASSIGNED/CONFIRMED; `history`: COMPLETED/CANCELLED; `upcoming`: activos con `scheduledAt` ≥ hoy |
 | `status` | `PENDING`, `ASSIGNED`, `CONFIRMED`, `COMPLETED`, `CANCELLED` | Estado del viaje |
 | `q` | texto | Cliente (nombre, teléfono o email), origen o destino, sin distinguir mayúsculas |
 | `fechaDesde` / `fechaHasta` | fecha ISO | Rango sobre `scheduledAt`; si es solo fecha se usa el día completo en UTC |
 | `page` / `limit` | entero | Convención general |
+
+`PATCH /api/v1/admin/trips/:id` edita un viaje con campos opcionales `scheduledAt`, `origin`,
+`destination`, `passengerCount`, `clientName`, `clientPhone` y `clientEmail`. Responde el resumen
+del viaje (`id`, `status`, `scheduledAt`, `origin`, `destination`) con estas reglas:
+
+- Viajes `COMPLETED` o `CANCELLED` no se editan (`400`).
+- Si el viaje viene de una reserva (`tramoId`), no se admiten cambios de `passengerCount` (`400`)
+  para no romper el conteo de cupo del tramo.
+- Con embarcación asignada, cambiar `scheduledAt` re-valida la disponibilidad de la agenda
+  (excluyendo el propio viaje/salida/tramo); subir `passengerCount` por encima de la capacidad
+  responde `400`.
+- `clientEmail` duplicado responde `400`.
 
 `GET /api/v1/admin/solicitudes` (ADMIN), ordenado por `createdAt` ascendente, con `status`
 opcional (`PENDING`, `APPROVED`, `REJECTED`) para filtrar por estado de la solicitud.

@@ -5,6 +5,7 @@ import { buildPaginated } from '../common/dto/paginated-response.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ListSolicitudesQueryDto } from './list-solicitudes-query.dto.js';
 import type { UpdateProfileDto } from './update-profile.dto.js';
+import type { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
 @Injectable()
 export class OwnersService {
@@ -60,6 +61,65 @@ export class OwnersService {
 		});
 
 		return this.getMyRequest(userId);
+	}
+
+	async getMyReviews(userId: string, query: PaginationQueryDto) {
+		const page = Number(query.page) || 1;
+		const limit = Number(query.limit) || 20;
+		const reviewWhere: Prisma.ReviewWhereInput = { embarcacion: { propietario: { userId } } };
+
+		const [agrupado, data, total, lanchas] = await Promise.all([
+			this.prisma.review.groupBy({
+				by: ['embarcacionId'],
+				where: reviewWhere,
+				_avg: { rating: true },
+				_count: { _all: true },
+			}),
+			this.prisma.review.findMany({
+				where: reviewWhere,
+				orderBy: { createdAt: 'desc' },
+				skip: (page - 1) * limit,
+				take: limit,
+				select: {
+					id: true,
+					rating: true,
+					comment: true,
+					createdAt: true,
+					embarcacion: { select: { id: true, nombre: true } },
+					trip: { select: { origin: true, destination: true, scheduledAt: true } },
+				},
+			}),
+			this.prisma.review.count({ where: reviewWhere }),
+			this.prisma.embarcacion.findMany({
+				where: { propietario: { userId } },
+				select: { id: true, nombre: true },
+			}),
+		]);
+
+		const ratingPorLancha = new Map(
+			agrupado.filter((group) => group.embarcacionId).map((group) => [group.embarcacionId!, group]),
+		);
+		const totalResenas = agrupado.reduce((sum, group) => sum + group._count._all, 0);
+		const sumaRatings = agrupado.reduce(
+			(sum, group) => sum + (group._avg.rating ?? 0) * group._count._all,
+			0,
+		);
+
+		return {
+			promedio: totalResenas > 0 ? Math.round((sumaRatings / totalResenas) * 10) / 10 : null,
+			total: totalResenas,
+			porLancha: lanchas.map((lancha) => {
+				const group = ratingPorLancha.get(lancha.id);
+				return {
+					boatId: lancha.id,
+					nombre: lancha.nombre,
+					promedio:
+						group && group._avg.rating !== null ? Math.round(group._avg.rating * 10) / 10 : null,
+					total: group?._count._all ?? 0,
+				};
+			}),
+			...buildPaginated(data, total, page, limit),
+		};
 	}
 
 	async reopenMyRequest(userId: string) {

@@ -25,6 +25,7 @@ import {
 	TripResumenDto,
 } from './trips.responses.js';
 import { UpdateTripStatusDto } from './update-trip-status.dto.js';
+import { UpdateTripDto } from './update-trip.dto.js';
 import { AssignBoatDto } from './assign-boat.dto.js';
 
 @ApiTags('trips')
@@ -54,6 +55,17 @@ export class TripsController {
 	@ApiNotFoundResponse({ description: 'Embarcación inexistente.' })
 	create(@Body() dto: CreateTripDto, @Req() request: AuthenticatedRequest) {
 		return this.tripsService.create(dto, request.user!.id);
+	}
+
+	@Patch(':id')
+	@ApiOperation({ summary: 'Edita fecha, origen, destino, pasajeros o datos del cliente de un viaje' })
+	@ApiOkResponse({ type: TripResumenDto })
+	@ApiNotFoundResponse({ description: 'Viaje inexistente.' })
+	@ApiBadRequestResponse({
+		description: 'Viaje completado/cancelado, capacidad insuficiente, agenda ocupada o reserva vinculada.',
+	})
+	update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTripDto) {
+		return this.tripsService.update(id, dto);
 	}
 
 	@Patch(':id/status')

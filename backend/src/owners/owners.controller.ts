@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
 	ApiBearerAuth,
 	ApiConflictResponse,
@@ -13,8 +13,9 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import type { AuthenticatedRequest } from '../auth/types.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 import { OwnersService } from './owners.service.js';
-import { SolicitudPropiaDto } from './owners.responses.js';
+import { ResenasPropiasDto, SolicitudPropiaDto } from './owners.responses.js';
 import { UpdateProfileDto } from './update-profile.dto.js';
 
 @ApiTags('owners')
@@ -43,6 +44,15 @@ export class OwnersController {
 	@ApiConflictResponse({ description: 'La solicitud no está RECHAZADA.' })
 	reopenMyRequest(@Req() request: AuthenticatedRequest) {
 		return this.ownersService.reopenMyRequest(request.user!.id);
+	}
+
+	@Get('me/reviews')
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(Role.OWNER)
+	@ApiOperation({ summary: 'Reseñas de las lanchas del lanchero autenticado (promedio y paginado)' })
+	@ApiOkResponse({ type: ResenasPropiasDto })
+	listMyReviews(@Req() request: AuthenticatedRequest, @Query() query: PaginationQueryDto) {
+		return this.ownersService.getMyReviews(request.user!.id, query);
 	}
 
 	@Patch('me')

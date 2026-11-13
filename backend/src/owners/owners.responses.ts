@@ -159,3 +159,73 @@ export class OwnerRecordDto {
   @ApiProperty({ example: '2026-10-25T12:00:00.000Z' })
   updatedAt: Date;
 }
+
+export class ResenaEmbarcacionRefDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ example: 'Lancha Delta 1' })
+  nombre: string;
+}
+
+export class ResenaViajeRefDto {
+  @ApiProperty({ example: 'Delta del Tigre' })
+  origin: string;
+
+  @ApiProperty({ example: 'Tigre Centro' })
+  destination: string;
+
+  @ApiProperty({ example: '2026-11-08T20:47:48.000Z' })
+  scheduledAt: Date;
+}
+
+export class ResenaItemDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ example: 5 })
+  rating: number;
+
+  @ApiProperty({ type: String, nullable: true, example: 'Excelente travesía.' })
+  comment: string | null;
+
+  @ApiProperty({ example: '2026-11-08T20:47:48.000Z' })
+  createdAt: Date;
+
+  @ApiProperty({ type: ResenaEmbarcacionRefDto })
+  embarcacion: ResenaEmbarcacionRefDto;
+
+  @ApiProperty({ type: ResenaViajeRefDto })
+  trip: ResenaViajeRefDto;
+}
+
+export class ResenaLanchaResumenDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  boatId: string;
+
+  @ApiProperty({ example: 'Lancha Delta 1' })
+  nombre: string;
+
+  @ApiProperty({ type: Number, nullable: true, example: 4.8, description: 'Promedio de la lancha; null sin reseñas.' })
+  promedio: number | null;
+
+  @ApiProperty({ example: 3 })
+  total: number;
+}
+
+export class ResenasPropiasDto {
+  @ApiProperty({ type: Number, nullable: true, example: 4.7, description: 'Promedio general de las lanchas del lanchero.' })
+  promedio: number | null;
+
+  @ApiProperty({ example: 12, description: 'Total de reseñas recibidas por sus lanchas.' })
+  total: number;
+
+  @ApiProperty({ type: [ResenaLanchaResumenDto] })
+  porLancha: ResenaLanchaResumenDto[];
+
+  @ApiProperty({ type: [ResenaItemDto] })
+  data: ResenaItemDto[];
+
+  @ApiProperty({ type: PageMetaDto })
+  meta: PageMetaDto;
+}

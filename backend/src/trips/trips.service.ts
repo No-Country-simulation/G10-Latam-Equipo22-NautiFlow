@@ -7,6 +7,7 @@ import { BoatScheduleService } from '../boats/boat-schedule.service.js';
 import { ReservasService } from '../reservas/reservas.service.js';
 import type { CreateTripDto } from './create-trip.dto.js';
 import type { ListTripsQueryDto } from './list-trips-query.dto.js';
+import type { UpdateTripDto } from './update-trip.dto.js';
 
 @Injectable()
 export class TripsService {
@@ -24,6 +25,8 @@ export class TripsService {
 			where.status = { in: [TripStatus.PENDING, TripStatus.ASSIGNED, TripStatus.CONFIRMED] };
 		} else if (query.scope === 'history') {
 			where.status = { in: [TripStatus.COMPLETED, TripStatus.CANCELLED] };
+		} else if (query.scope === 'upcoming') {
+			where.status = { in: [TripStatus.PENDING, TripStatus.ASSIGNED, TripStatus.CONFIRMED] };
 		} else if (query.status) {
 			where.status = query.status;
 		}
@@ -46,14 +49,17 @@ export class TripsService {
 		}
 
 		const scheduledAt: Prisma.DateTimeFilter = {};
+		if (query.scope === 'upcoming') scheduledAt.gte = new Date();
 		if (query.fechaDesde) scheduledAt.gte = new Date(query.fechaDesde);
 		if (query.fechaHasta) scheduledAt.lte = finDeDia(query.fechaHasta);
-		if (query.fechaDesde || query.fechaHasta) where.scheduledAt = scheduledAt;
+		if (query.scope === 'upcoming' || query.fechaDesde || query.fechaHasta) {
+			where.scheduledAt = scheduledAt;
+		}
 
 		const [data, total] = await Promise.all([
 			this.prisma.trip.findMany({
 				where,
-				orderBy: { scheduledAt: 'desc' },
+				orderBy: { scheduledAt: query.scope === 'upcoming' ? 'asc' : 'desc' },
 				skip: (page - 1) * limit,
 				take: limit,
 				select: {
@@ -122,6 +128,80 @@ export class TripsService {
 				select: { id: true, status: true, scheduledAt: true, origin: true, destination: true },
 			});
 		});
+	}
+
+	async update(id: string, dto: UpdateTripDto) {
+		const trip = await this.prisma.trip.findUnique({
+			where: { id },
+			select: {
+				id: true,
+				status: true,
+				embarcacionId: true,
+				tramoId: true,
+				salidaId: true,
+				passengerCount: true,
+				scheduledAt: true,
+				clienteId: true,
+			},
+		});
+		if (!trip) throw new NotFoundException('No se encontró el viaje.');
+		if (trip.status === TripStatus.COMPLETED || trip.status === TripStatus.CANCELLED) {
+			throw new BadRequestException('No se puede editar un viaje completado o cancelado.');
+		}
+		if (dto.passengerCount !== undefined && trip.tramoId) {
+			throw new BadRequestException(
+				'No se pueden cambiar los pasajeros de un viaje generado por una reserva.',
+			);
+		}
+		if (dto.passengerCount !== undefined && trip.embarcacionId) {
+			const boat = await this.prisma.embarcacion.findUnique({
+				where: { id: trip.embarcacionId },
+				select: { capacidad: true },
+			});
+			if (boat && boat.capacidad < dto.passengerCount) {
+				throw new BadRequestException('La embarcación asignada no tiene capacidad suficiente.');
+			}
+		}
+
+		const newScheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+		if (newScheduledAt && trip.embarcacionId && newScheduledAt.getTime() !== trip.scheduledAt.getTime()) {
+			await this.schedule.assertSlotsAvailable(trip.embarcacionId, [newScheduledAt], {
+				excludeTripId: trip.id,
+				excludeTramoId: trip.tramoId ?? undefined,
+				excludeSalidaId: trip.salidaId ?? undefined,
+			});
+		}
+
+		const tripData: Prisma.TripUpdateInput = {};
+		if (newScheduledAt) tripData.scheduledAt = newScheduledAt;
+		if (dto.origin !== undefined) tripData.origin = dto.origin.trim();
+		if (dto.destination !== undefined) tripData.destination = dto.destination.trim();
+		if (dto.passengerCount !== undefined) tripData.passengerCount = dto.passengerCount;
+
+		const clienteData: Prisma.ClienteUpdateInput = {};
+		if (dto.clientName !== undefined) clienteData.nombre = dto.clientName.trim();
+		if (dto.clientPhone !== undefined) clienteData.telefono = dto.clientPhone.trim();
+		if (dto.clientEmail !== undefined) clienteData.email = dto.clientEmail.trim().toLowerCase();
+
+		try {
+			return await this.prisma.$transaction(async (transaction) => {
+				if (Object.keys(clienteData).length > 0) {
+					await transaction.cliente.update({ where: { id: trip.clienteId }, data: clienteData });
+				}
+				if (Object.keys(tripData).length > 0) {
+					await transaction.trip.update({ where: { id }, data: tripData });
+				}
+				return transaction.trip.findUnique({
+					where: { id },
+					select: { id: true, status: true, scheduledAt: true, origin: true, destination: true },
+				});
+			});
+		} catch (error) {
+			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+				throw new BadRequestException('Ese email ya está registrado para otro cliente.');
+			}
+			throw error;
+		}
 	}
 
 	async updateStatus(id: string, status: TripStatus) {
