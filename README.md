@@ -189,7 +189,10 @@ Los E2E del backend requieren la base local (Docker). El CI corre en cada Pull R
 - Cada merge a `main` sincroniza el Blueprint de Render y redeployea Vercel.
 - Migraciones y seed corren en el build de Render (idempotentes).
 - **Render**: `CORS_ORIGIN` y `PUBLIC_APP_URL` apuntan a la URL de la app; `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` configuran el admin; `DATABASE_URL` y `JWT_SECRET` se inyectan automáticamente.
-- **Vercel**: `VITE_API_URL` define la URL de la API en tiempo de build (cambiarla requiere redeploy).
+- **Vercel**: `VITE_API_URL` define la base de la API en tiempo de build (cambiarla requiere
+  redeploy). En producción usa `/api/v1`: el rewrite de `vercel.json` hace proxy hacia Render,
+  así la API responde en el mismo dominio y la sesión funciona como cookie de primer nivel en
+  cualquier navegador.
 
 **Plan gratuito:** Render duerme el servicio a los 15 min sin tráfico (el primer request tarda ~1 min en despertarlo); PostgreSQL free expira a los 30 días (14 de gracia, sin backups). El rewrite de `frontend/vercel.json` (`/(.*) → /index.html`) permite rutas directas de React Router.
 
