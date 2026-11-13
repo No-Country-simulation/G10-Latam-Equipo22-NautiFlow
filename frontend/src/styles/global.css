@@ -4542,9 +4542,67 @@ button.workspace-notif-btn {
 }
 
 .nf-boat-trips {
+  position: relative;
   margin-top: auto;
   padding-top: 0.85rem;
   border-top: 1px dashed #e2ebe8;
+}
+
+.nf-trip-review-pop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1.9rem;
+  z-index: 4;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgb(159 208 198 / 35%);
+  border-radius: 12px;
+  background: #0f2926;
+  color: #fff;
+  box-shadow: 0 10px 24px rgb(15 41 38 / 28%);
+  animation: nf-review-pop-in 220ms ease;
+  pointer-events: none;
+}
+
+@keyframes nf-review-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nf-trip-review-stars {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0.35rem;
+}
+
+.nf-trip-review-quote {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nf-trip-review-meta {
+  display: block;
+  margin-top: 0.35rem;
+  color: #9fd0c6;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nf-trip-review-pop {
+    animation: none;
+  }
 }
 
 .nf-boat-trips-title {
