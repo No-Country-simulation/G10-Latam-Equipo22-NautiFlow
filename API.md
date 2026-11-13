@@ -194,7 +194,10 @@ activo) junto con su reputación agregada. Acepta `zonaId`, `page` y `limit`.
         "user": { "name": "Nombre del propietario" }
       },
       "zonas": [{ "zona": { "id": "uuid", "nombre": "Delta del Tigre" } }],
-      "rating": { "average": 4.7, "total": 3 }
+      "rating": { "average": 4.7, "total": 3 },
+      "reviews": [
+        { "rating": 5, "comment": "Excelente paseo", "createdAt": "2026-11-10T15:00:00.000Z" }
+      ]
     }
   ],
   "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
@@ -202,8 +205,10 @@ activo) junto con su reputación agregada. Acepta `zonaId`, `page` y `limit`.
 ```
 
 `average` es `null` cuando la embarcación no tiene reseñas y se redondea a un decimal.
-`GET /public/boats/:id` incluye las últimas cinco reseñas y `GET /public/boats/:id/reviews`
-pagina todas las reseñas. Solo se exponen embarcaciones elegibles; el resto responde `404`.
+`GET /public/boats` incluye, por embarcación, sus últimas tres reseñas con comentario
+(`reviews`, vacío si no tiene). `GET /public/boats/:id` incluye las últimas cinco reseñas
+y `GET /public/boats/:id/reviews` pagina todas las reseñas. Solo se exponen embarcaciones
+elegibles; el resto responde `404`.
 No se exponen matrícula, teléfono ni email del propietario: solo el WhatsApp de contacto.
 
 ### `POST /api/v1/admin/empty-legs` (ADMIN)

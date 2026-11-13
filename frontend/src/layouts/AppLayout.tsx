@@ -4,11 +4,9 @@ import {
   CalendarClock,
   ChevronDown,
   ClipboardList,
-  Compass,
   FileCheck2,
   LayoutGrid,
   LogOut,
-  MessageCircle,
   RotateCcw,
   Search,
   Ship,
@@ -19,6 +17,14 @@ import { useAuth } from '../auth/useAuth';
 import { roleDashboard } from '../auth/role-routes';
 import type { UserRole } from '../auth/auth.types';
 import { NotificationBell } from '../components/NotificationBell';
+import { SOCIAL_LINKS } from '../config/social-links';
+import { FacebookIcon, InstagramIcon, XIcon } from '../components/SocialIcons';
+
+const socialIcons: Record<string, typeof InstagramIcon> = {
+  Instagram: InstagramIcon,
+  Facebook: FacebookIcon,
+  X: XIcon,
+};
 
 const roleSectionLabel: Record<UserRole, string> = {
   ADMIN: 'ADMINISTRACIÓN',
@@ -266,7 +272,6 @@ export function AppLayout() {
             <Link to="/#how-it-works" onClick={() => handleSectionScroll('how-it-works')}>
               Cómo funciona
             </Link>
-            {!user && <Link to="/registro/lanchero">Para lancheros</Link>}
             {user && user.role !== 'ADMIN' && (
               <>
                 <NavLink to={roleDashboard(user.role)}>Panel</NavLink>
@@ -331,7 +336,7 @@ export function AppLayout() {
               <>
                 <Link to="/login">Ingresar</Link>
                 <Link to="/registro/lanchero" className="nav-cta">
-                  Crear cuenta
+                  Sumá tu lancha
                 </Link>
               </>
             )}
@@ -354,12 +359,24 @@ export function AppLayout() {
             <nav aria-label="Navegación del pie de página">
               <Link to="/#network" onClick={() => handleSectionScroll('network')}>Explorar viajes</Link>
               <Link to="/#how-it-works" onClick={() => handleSectionScroll('how-it-works')}>Cómo funciona</Link>
-              <Link to="/registro/lanchero">Para lancheros</Link>
+              <Link to="/registro/lanchero">Sumá tu lancha</Link>
             </nav>
-            <div className="footer-social" role="img" aria-label="NautiFlow en redes">
-              <Compass size={17} aria-hidden="true" />
-              <Star size={17} aria-hidden="true" />
-              <MessageCircle size={17} aria-hidden="true" />
+            <div className="footer-social">
+              {SOCIAL_LINKS.map((link) => {
+                const Icon = socialIcons[link.name];
+                if (!Icon) return null;
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`NautiFlow en ${link.name}`}
+                  >
+                    <Icon size={17} />
+                  </a>
+                );
+              })}
             </div>
           </div>
         ) : (

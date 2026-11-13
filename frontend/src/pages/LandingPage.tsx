@@ -28,16 +28,13 @@ interface PublicBoat {
   };
   zonas: Array<{ zona: { id: string; nombre: string } }>;
   rating: { average: number | null; total: number };
+  reviews?: PublicBoatReview[];
 }
 
 interface PublicBoatReview {
   rating: number;
   comment: string | null;
   createdAt: string;
-}
-
-interface PublicBoatDetail extends PublicBoat {
-  reviews: PublicBoatReview[];
 }
 
 interface PublicBoatPage {
@@ -179,15 +176,17 @@ function BoatCard({
   index,
   trips = [],
   ownReviews = [],
-  reviewPool = [],
 }: {
   boat: PublicBoat;
   index: number;
   trips?: UpcomingTrip[];
   ownReviews?: ExperienceReview[];
-  reviewPool?: ExperienceReview[];
 }) {
   const [hoverReview, setHoverReview] = useState<ExperienceReview | null>(null);
+  const pickOwnReview = () => {
+    if (ownReviews.length === 0) return;
+    setHoverReview(ownReviews[Math.floor(Math.random() * ownReviews.length)]);
+  };
   const zonesLabel =
     boat.zonas.map(({ zona }) => zona.nombre).join(' · ') || 'Delta del Tigre';
   const operatorName = boat.propietario?.user?.name;
@@ -263,20 +262,12 @@ function BoatCard({
 
         <div
           className="nf-boat-trips"
-          onMouseEnter={() => {
-            const source = ownReviews.length > 0 ? ownReviews : reviewPool;
-            if (source.length === 0) return;
-            setHoverReview(source[Math.floor(Math.random() * source.length)]);
-          }}
+          onMouseEnter={pickOwnReview}
           onMouseLeave={() => setHoverReview(null)}
-          onFocus={() => {
-            const source = ownReviews.length > 0 ? ownReviews : reviewPool;
-            if (source.length === 0) return;
-            setHoverReview(source[Math.floor(Math.random() * source.length)]);
-          }}
+          onFocus={pickOwnReview}
           onBlur={() => setHoverReview(null)}
           tabIndex={0}
-          aria-label={`Próximos viajes de ${boat.nombre}. Pasá el mouse para ver una reseña al azar.`}
+          aria-label={`Próximos viajes de ${boat.nombre}. Pasá el mouse para ver una reseña de esta lancha.`}
         >
           <p className="nf-boat-trips-title">Próximos viajes</p>
           {upcoming.length === 0 ? (
@@ -380,7 +371,6 @@ export function LandingPage() {
   const [experiences, setExperiences] = useState<ExperienceReview[]>(FALLBACK_EXPERIENCES);
   const [tripsByOperator, setTripsByOperator] = useState<Record<string, UpcomingTrip[]>>({});
   const [reviewsByBoat, setReviewsByBoat] = useState<Record<string, ExperienceReview[]>>({});
-  const [reviewPool, setReviewPool] = useState<ExperienceReview[]>([]);
   const [visibleBoats, setVisibleBoats] = useState(8);
   const networkRef = useReveal<HTMLElement>();
   const howRef = useReveal<HTMLElement>();
@@ -414,37 +404,28 @@ export function LandingPage() {
         }
         setTripsByOperator(grouped);
 
-        const detailPromises = page.data.slice(0, 6).map((boat) =>
-          api
-            .get<PublicBoatDetail>(`/public/boats/${boat.id}`)
-            .catch(() => null),
-        );
-        const details = await Promise.all(detailPromises);
-        if (!active) return;
-
         const collected: ExperienceReview[] = [];
         const byBoat: Record<string, ExperienceReview[]> = {};
-        for (const detail of details) {
-          if (!detail || !Array.isArray(detail.reviews)) continue;
+        for (const boat of page.data) {
+          if (!Array.isArray(boat.reviews)) continue;
           const boatReviews: ExperienceReview[] = [];
-          for (const rev of detail.reviews) {
+          for (const rev of boat.reviews) {
             if (!rev.comment) continue;
             const item: ExperienceReview = {
-              id: `${detail.id}-${rev.createdAt}`,
+              id: `${boat.id}-${rev.createdAt}`,
               rating: rev.rating,
               comment: rev.comment,
-              boatName: detail.nombre,
+              boatName: boat.nombre,
               createdAt: rev.createdAt,
             };
             boatReviews.push(item);
             collected.push(item);
           }
-          if (boatReviews.length > 0) byBoat[detail.id] = boatReviews;
+          if (boatReviews.length > 0) byBoat[boat.id] = boatReviews;
         }
 
         if (collected.length > 0) {
           setReviewsByBoat(byBoat);
-          setReviewPool(shuffle(collected));
           setExperiences(shuffle(collected).slice(0, 6));
         }
       })
@@ -578,7 +559,6 @@ export function LandingPage() {
                     index={index}
                     trips={tripsByOperator[boat.propietario?.user?.name ?? '']}
                     ownReviews={reviewsByBoat[boat.id] ?? []}
-                    reviewPool={reviewPool}
                   />
                 ))}
               </div>

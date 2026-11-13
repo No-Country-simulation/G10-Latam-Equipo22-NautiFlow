@@ -126,7 +126,15 @@ export class ReviewsService {
 				orderBy: { nombre: 'asc' },
 				skip: (page - 1) * limit,
 				take: limit,
-				select: CAMPOS_PUBLICOS,
+				select: {
+					...CAMPOS_PUBLICOS,
+					reviews: {
+						where: { comment: { not: null } },
+						orderBy: { createdAt: 'desc' },
+						take: 3,
+						select: { rating: true, comment: true, createdAt: true },
+					},
+				},
 			}),
 			this.prisma.embarcacion.count({ where }),
 		]);

@@ -1296,6 +1296,26 @@ h2 {
   color: rgb(255 255 255 / 82%);
 }
 
+.landing-footer .footer-social a {
+  display: inline-flex;
+  color: rgb(255 255 255 / 70%);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-footer .footer-social a:hover,
+.landing-footer .footer-social a:focus-visible {
+  color: #fff;
+  transform: scale(1.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-footer .footer-social a {
+    transition: none;
+  }
+}
+
 .landing-footer > p {
   width: min(1100px, 100%);
   margin: 1.5rem auto 0;
