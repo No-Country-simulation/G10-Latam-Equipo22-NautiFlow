@@ -121,28 +121,25 @@ export function AdminReviewsPage() {
     void loadData();
   }, [activeTab, reviewsPage, pendingPage, selectedBoatId, minRating]);
 
-  async function handleGenerateLink(tripId: string) {
-    setBusyTripId(tripId);
+  async function handleSendWhatsApp(pt: PendingReviewTrip) {
+    setBusyTripId(pt.id);
     setError('');
     try {
-      const res = await api.post<{ reviewUrl: string }>(`/admin/trips/${tripId}/review-link`, {});
-      setGeneratedTokens((prev) => ({ ...prev, [tripId]: res.reviewUrl }));
-      setSuccess('¡Enlace de reseña generado con éxito!');
-      await loadData();
+      let url = generatedTokens[pt.id];
+      if (!url) {
+        const res = await api.post<{ reviewUrl: string }>(`/admin/trips/${pt.id}/review-link`, {});
+        url = res.reviewUrl;
+        setGeneratedTokens((prev) => ({ ...prev, [pt.id]: url }));
+      }
+      const boatName = pt.embarcacion?.nombre ?? 'la lancha';
+      const phone = pt.cliente.telefono.replace(/\D/g, '');
+      const text = `¡Hola ${pt.cliente.nombre}! 🚤 Gracias por viajar con ${boatName} en el Delta.\nTu opinión nos ayuda a mantener la mejor calidad de servicio. Por favor dejanos tu calificación en este enlace seguro:\n${url}`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo generar el enlace de reseña.');
+      setError(err instanceof ApiError ? err.message : 'No se pudo preparar el mensaje de WhatsApp.');
     } finally {
       setBusyTripId('');
     }
-  }
-
-  function handleCopyWhatsApp(pt: PendingReviewTrip) {
-    const url = generatedTokens[pt.id];
-    if (!url) return;
-    const boatName = pt.embarcacion?.nombre ?? 'la lancha';
-    const text = `¡Hola ${pt.cliente.nombre}! 🚤 Gracias por viajar con ${boatName} en el Delta.\nTu opinión nos ayuda a mantener la mejor calidad de servicio. Por favor dejanos tu calificación en este enlace seguro:\n${url}`;
-    navigator.clipboard.writeText(text);
-    setSuccess(`¡Mensaje para ${pt.cliente.nombre} copiado al portapapeles!`);
   }
 
   return (
@@ -339,22 +336,24 @@ export function AdminReviewsPage() {
                   </div>
 
                   <div className="pending-review-footer">
-                    {!localUrl ? (
+                    <button
+                      type="button"
+                      className="button btn-sm"
+                      disabled={busyTripId === pt.id}
+                      onClick={() => void handleSendWhatsApp(pt)}
+                    >
+                      <MessageCircle size={14} /> {busyTripId === pt.id ? 'Generando...' : localUrl ? 'Enviar por WhatsApp' : 'Generar enlace y enviar por WhatsApp'}
+                    </button>
+                    {localUrl && (
                       <button
                         type="button"
-                        className="button btn-sm"
-                        disabled={busyTripId === pt.id}
-                        onClick={() => void handleGenerateLink(pt.id)}
+                        className="button button-ghost btn-sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(localUrl);
+                          setSuccess('Enlace copiado al portapapeles.');
+                        }}
                       >
-                        <Star size={14} /> {busyTripId === pt.id ? 'Generando...' : hasActiveToken ? 'Regenerar enlace de reseña' : 'Generar enlace de reseña'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="button btn-sm"
-                        onClick={() => handleCopyWhatsApp(pt)}
-                      >
-                        <MessageCircle size={14} /> Copiar mensaje para WhatsApp
+                        <Copy size={13} /> Copiar enlace
                       </button>
                     )}
                   </div>

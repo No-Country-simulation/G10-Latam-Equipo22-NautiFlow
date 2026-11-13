@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FileCheck2,
+  MessageCircle,
   RotateCcw,
   Ship,
   Star,
@@ -85,6 +86,24 @@ interface AdminRetornoRow {
   embarcacion?: { nombre: string } | null;
 }
 
+interface ProximoViajeRow {
+  id: string;
+  scheduledAt: string;
+  origin: string;
+  destination: string;
+  status: string;
+  cliente: { nombre: string };
+}
+
+interface PendienteResenaRow {
+  id: string;
+  scheduledAt: string;
+  origin: string;
+  destination: string;
+  cliente: { nombre: string; telefono: string };
+  embarcacion?: { nombre: string } | null;
+}
+
 const DEFAULT_WEEK_DAYS: ActividadSemanalItem[] = [
   { key: 'lun', label: 'L', count: 0 },
   { key: 'mar', label: 'M', count: 0 },
@@ -95,10 +114,24 @@ const DEFAULT_WEEK_DAYS: ActividadSemanalItem[] = [
   { key: 'dom', label: 'D', count: 0 },
 ];
 
+const TRIP_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente de lancha',
+  ASSIGNED: 'Lancha asignada',
+  CONFIRMED: 'Confirmado',
+  COMPLETED: 'Completado',
+  CANCELLED: 'Cancelado',
+};
+
+function statusLabelFor(status: string) {
+  return TRIP_STATUS_LABELS[status] ?? status;
+}
+
 export function RoleDashboardPage({ role }: { role: UserRole }) {
   const { user } = useAuth();
   const [adminData, setAdminData] = useState<AdminDashboardData | null>(null);
   const [adminRetornos, setAdminRetornos] = useState<AdminRetornoRow[]>([]);
+  const [proximosViajes, setProximosViajes] = useState<ProximoViajeRow[]>([]);
+  const [pendientesResena, setPendientesResena] = useState<PendienteResenaRow[]>([]);
   const [ownerKpis, setOwnerKpis] = useState<OwnerKpiData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,11 +142,15 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
       Promise.all([
         api.get<AdminDashboardData>('/admin/dashboard/resumen'),
         api.get<Paginated<AdminRetornoRow>>('/admin/empty-legs?status=AVAILABLE&limit=4'),
+        api.get<Paginated<ProximoViajeRow>>('/admin/trips?scope=upcoming&limit=5').catch(() => null),
+        api.get<Paginated<PendienteResenaRow>>('/admin/reviews/pending?limit=3').catch(() => null),
       ])
-        .then(([resumen, retornos]) => {
+        .then(([resumen, retornos, proximos, pendientes]) => {
           if (!isMounted) return;
           setAdminData(resumen);
           setAdminRetornos(retornos.data);
+          setProximosViajes(proximos?.data ?? []);
+          setPendientesResena(pendientes?.data ?? []);
         })
         .catch(() => undefined)
         .finally(() => {
@@ -262,6 +299,17 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
     role === 'ADMIN'
       ? 'Panel central de control y monitoreo en tiempo real de la red NautiFlow en el Delta.'
       : 'Este es el estado operativo de tus embarcaciones y viajes en la red.';
+
+  async function sendReviewWhatsApp(pt: PendienteResenaRow) {
+    try {
+      const res = await api.post<{ reviewUrl: string }>(`/admin/trips/${pt.id}/review-link`, {});
+      const phone = pt.cliente.telefono.replace(/\D/g, '');
+      const text = `Hola ${pt.cliente.nombre}, ¡gracias por viajar con NautiFlow en tu recorrido ${pt.origin} → ${pt.destination}! Nos ayudaría mucho que nos dejes tu reseña: ${res.reviewUrl}`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } catch {
+      // Silencio: el panel no debe romperse si falla la generación del enlace.
+    }
+  }
 
   return (
     <section className="nf-dashboard">
@@ -432,6 +480,95 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
                 </div>
               )}
             </section>
+          )}
+
+          {role === 'ADMIN' && (
+            <div className="nf-bottom-panels" style={{ marginTop: '1.25rem' }}>
+              {/* Próximos viajes */}
+              <section className="nf-panel" aria-labelledby="upcoming-title">
+                <div className="nf-panel-header">
+                  <div>
+                    <h2 id="upcoming-title">Próximos viajes</h2>
+                    <span className="nf-panel-desc">Salidas programadas a partir de hoy</span>
+                  </div>
+                  <Link to="/admin/viajes" className="nf-period-pill" style={{ textDecoration: 'none' }}>
+                    Gestionar viajes
+                  </Link>
+                </div>
+
+                {proximosViajes.length === 0 ? (
+                  <p className="empty-activity-text">No hay viajes programados a partir de hoy.</p>
+                ) : (
+                  <div className="recent-activity-list">
+                    {proximosViajes.map((trip) => (
+                      <div key={trip.id} className="recent-event-item">
+                        <div className="event-bullet" />
+                        <div className="event-content">
+                          <div className="event-title-row">
+                            <strong className="event-title">
+                              {trip.origin} → {trip.destination}
+                            </strong>
+                            <span className="event-time">
+                              {new Date(trip.scheduledAt).toLocaleString('es-AR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <p className="event-desc">
+                            {trip.cliente.nombre} · {statusLabelFor(trip.status)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Reseñas pendientes con envío por WhatsApp */}
+              <section className="nf-panel" aria-labelledby="pending-reviews-title">
+                <div className="nf-panel-header">
+                  <div>
+                    <h2 id="pending-reviews-title">Reseñas pendientes</h2>
+                    <span className="nf-panel-desc">Pedir calificación por WhatsApp a los turistas</span>
+                  </div>
+                  <Link to="/admin/resenas" className="nf-period-pill" style={{ textDecoration: 'none' }}>
+                    Ver reseñas
+                  </Link>
+                </div>
+
+                {pendientesResena.length === 0 ? (
+                  <p className="empty-activity-text">Todos los viajes completados ya fueron calificados.</p>
+                ) : (
+                  <div className="recent-activity-list">
+                    {pendientesResena.map((pt) => (
+                      <div key={pt.id} className="recent-event-item">
+                        <div className="event-bullet" />
+                        <div className="event-content">
+                          <div className="event-title-row">
+                            <strong className="event-title">
+                              {pt.origin} → {pt.destination}
+                            </strong>
+                            <button
+                              type="button"
+                              className="button button-ghost btn-sm"
+                              onClick={() => void sendReviewWhatsApp(pt)}
+                            >
+                              <MessageCircle size={14} /> WhatsApp
+                            </button>
+                          </div>
+                          <p className="event-desc">
+                            {pt.cliente.nombre} · {pt.embarcacion?.nombre ?? 'Sin lancha'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           )}
         </>
       )}

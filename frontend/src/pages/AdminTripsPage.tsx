@@ -4,6 +4,8 @@ import {
   CalendarClock,
   Clock,
   Copy,
+  MessageCircle,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -39,6 +41,12 @@ interface TripItem {
   } | null;
 }
 
+function toDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 const statusBadgeClass: Record<TripItem['status'], string> = {
   PENDING: 'status-pending',
   ASSIGNED: 'status-assigned',
@@ -56,7 +64,7 @@ const statusLabels: Record<TripItem['status'], string> = {
 };
 
 export function AdminTripsPage() {
-  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'HISTORY'>('ACTIVE');
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'UPCOMING' | 'HISTORY'>('ACTIVE');
   const [trips, setTrips] = useState<TripItem[]>([]);
   const [boats, setBoats] = useState<BoatOption[]>([]);
   const [meta, setMeta] = useState<PageMeta | null>(null);
@@ -69,6 +77,10 @@ export function AdminTripsPage() {
   // Modals
   const [showNewTripModal, setShowNewTripModal] = useState(false);
   const [submittingTrip, setSubmittingTrip] = useState(false);
+
+  // Edit trip modal
+  const [editingTrip, setEditingTrip] = useState<TripItem | null>(null);
+  const [updatingTrip, setUpdatingTrip] = useState(false);
 
   // Review link generation
   const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
@@ -83,7 +95,12 @@ export function AdminTripsPage() {
     setLoading(true);
     setError('');
     try {
-      const scopeParam = activeTab === 'ACTIVE' ? 'scope=active' : 'scope=history';
+      const scopeParam =
+        activeTab === 'ACTIVE'
+          ? 'scope=active'
+          : activeTab === 'UPCOMING'
+            ? 'scope=upcoming'
+            : 'scope=history';
       const qParam = searchTerm.trim() ? `&q=${encodeURIComponent(searchTerm.trim())}` : '';
 
       const [tripRes, boatRes] = await Promise.all([
@@ -172,6 +189,52 @@ export function AdminTripsPage() {
     }
   }
 
+  async function handleUpdateTrip(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingTrip) return;
+    setUpdatingTrip(true);
+    setError('');
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload: Record<string, unknown> = {
+      clientName: String(formData.get('clientName')),
+      clientPhone: String(formData.get('clientPhone')),
+      clientEmail: formData.get('clientEmail') ? String(formData.get('clientEmail')) : undefined,
+      scheduledAt: new Date(String(formData.get('scheduledAt'))).toISOString(),
+      passengerCount: Number(formData.get('passengerCount')),
+      origin: String(formData.get('origin')),
+      destination: String(formData.get('destination')),
+    };
+
+    try {
+      await api.patch(`/admin/trips/${editingTrip.id}`, payload);
+      setSuccess('¡Viaje actualizado con éxito!');
+      setEditingTrip(null);
+      await loadTrips();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo actualizar el viaje.');
+    } finally {
+      setUpdatingTrip(false);
+    }
+  }
+
+  async function handleSendReviewWhatsApp(trip: TripItem) {
+    setError('');
+    try {
+      let reviewUrl = reviewLinks[trip.id];
+      if (!reviewUrl) {
+        const res = await api.post<{ reviewUrl: string }>(`/admin/trips/${trip.id}/review-link`, {});
+        reviewUrl = res.reviewUrl;
+        setReviewLinks((prev) => ({ ...prev, [trip.id]: reviewUrl }));
+      }
+      const phone = trip.cliente.telefono.replace(/\D/g, '');
+      const text = `Hola ${trip.cliente.nombre}, ¡gracias por viajar con NautiFlow en tu recorrido ${trip.origin} → ${trip.destination}! Nos ayudaría mucho que nos dejes tu reseña: ${reviewUrl}`;
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo preparar el mensaje de WhatsApp.');
+    }
+  }
+
   async function handlePublishEmptyReturn(e: FormEvent) {
     e.preventDefault();
     if (!emptyReturnTrip || !returnScheduledAt) return;
@@ -236,6 +299,13 @@ export function AdminTripsPage() {
           </button>
           <button
             type="button"
+            className={`filter-tab${activeTab === 'UPCOMING' ? ' is-active' : ''}`}
+            onClick={() => { setActiveTab('UPCOMING'); setPage(1); }}
+          >
+            <CalendarClock size={16} /> Próximos viajes (fecha ≥ hoy)
+          </button>
+          <button
+            type="button"
             className={`filter-tab${activeTab === 'HISTORY' ? ' is-active' : ''}`}
             onClick={() => { setActiveTab('HISTORY'); setPage(1); }}
           >
@@ -263,9 +333,11 @@ export function AdminTripsPage() {
           <CalendarClock size={44} className="empty-icon" />
           <h3>No hay viajes para mostrar</h3>
           <p>
-            {activeTab === 'ACTIVE'
-              ? 'No hay viajes activos o programados en este momento.'
-              : 'El historial de viajes completados está vacío o coincide con la búsqueda.'}
+            {activeTab === 'UPCOMING'
+              ? 'No hay viajes programados a partir de hoy.'
+              : activeTab === 'ACTIVE'
+                ? 'No hay viajes activos o programados en este momento.'
+                : 'El historial de viajes completados está vacío o coincide con la búsqueda.'}
           </p>
         </div>
       ) : (
@@ -400,6 +472,26 @@ export function AdminTripsPage() {
                       </button>
                     )}
 
+                    {trip.status === 'COMPLETED' && (
+                      <button
+                        type="button"
+                        className="button button-ghost btn-sm"
+                        onClick={() => void handleSendReviewWhatsApp(trip)}
+                      >
+                        <MessageCircle size={14} /> Enviar reseña por WhatsApp
+                      </button>
+                    )}
+
+                    {(trip.status === 'PENDING' || trip.status === 'ASSIGNED' || trip.status === 'CONFIRMED') && (
+                      <button
+                        type="button"
+                        className="button button-ghost btn-sm"
+                        onClick={() => setEditingTrip(trip)}
+                      >
+                        <Pencil size={14} /> Editar
+                      </button>
+                    )}
+
                     {(trip.status === 'PENDING' || trip.status === 'ASSIGNED' || trip.status === 'CONFIRMED') && (
                       <button
                         type="button"
@@ -495,6 +587,131 @@ export function AdminTripsPage() {
                   type="button"
                   className="button button-ghost"
                   onClick={() => setShowNewTripModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Editar Viaje */}
+      {editingTrip && (
+        <div className="nf-modal-backdrop" onClick={() => setEditingTrip(null)}>
+          <div className="nf-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="nf-modal-header">
+              <div>
+                <span className="admin-kicker">EDICIÓN DE VIAJE</span>
+                <h2>Editar Viaje</h2>
+                <span className="nf-modal-subtitle">
+                  {editingTrip.cliente.nombre} · {statusLabels[editingTrip.status]}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setEditingTrip(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTrip} className="nf-modal-content">
+              <div className="form-grid-modal">
+                <div className="form-group">
+                  <label htmlFor="edit-clientName">Nombre del cliente *</label>
+                  <input
+                    id="edit-clientName"
+                    name="clientName"
+                    required
+                    minLength={2}
+                    maxLength={100}
+                    defaultValue={editingTrip.cliente.nombre}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-clientPhone">Teléfono de contacto *</label>
+                  <input
+                    id="edit-clientPhone"
+                    name="clientPhone"
+                    type="tel"
+                    required
+                    minLength={8}
+                    maxLength={30}
+                    defaultValue={editingTrip.cliente.telefono}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-clientEmail">Email (opcional)</label>
+                  <input
+                    id="edit-clientEmail"
+                    name="clientEmail"
+                    type="email"
+                    defaultValue={editingTrip.cliente.email ?? ''}
+                    placeholder="cliente@example.com"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-passengerCount">Cantidad de pasajeros *</label>
+                  <input
+                    id="edit-passengerCount"
+                    name="passengerCount"
+                    type="number"
+                    min={1}
+                    max={100}
+                    required
+                    defaultValue={editingTrip.passengerCount}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-scheduledAt">Fecha y hora estimada *</label>
+                  <input
+                    id="edit-scheduledAt"
+                    name="scheduledAt"
+                    type="datetime-local"
+                    required
+                    defaultValue={toDatetimeLocal(editingTrip.scheduledAt)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-origin">Origen *</label>
+                  <input
+                    id="edit-origin"
+                    name="origin"
+                    required
+                    minLength={2}
+                    maxLength={160}
+                    defaultValue={editingTrip.origin}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="edit-destination">Destino *</label>
+                  <input
+                    id="edit-destination"
+                    name="destination"
+                    required
+                    minLength={2}
+                    maxLength={160}
+                    defaultValue={editingTrip.destination}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer-actions">
+                <button type="submit" className="button" disabled={updatingTrip}>
+                  {updatingTrip ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+                <button
+                  type="button"
+                  className="button button-ghost"
+                  onClick={() => setEditingTrip(null)}
                 >
                   Cancelar
                 </button>
