@@ -74,6 +74,11 @@ interface OwnerSolicitudKpi {
   documents: Array<{ status: string }>;
 }
 
+interface OwnerReviewsKpi {
+  promedio: number | null;
+  total: number;
+}
+
 interface CountMeta {
   meta: { total: number };
 }
@@ -133,6 +138,7 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
   const [proximosViajes, setProximosViajes] = useState<ProximoViajeRow[]>([]);
   const [pendientesResena, setPendientesResena] = useState<PendienteResenaRow[]>([]);
   const [ownerKpis, setOwnerKpis] = useState<OwnerKpiData | null>(null);
+  const [ownerReviewsKpi, setOwnerReviewsKpi] = useState<OwnerReviewsKpi | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -163,8 +169,9 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
         api.get<CountMeta>('/owners/me/empty-legs?status=AVAILABLE&limit=1'),
         api.get<CountMeta>('/owners/me/salidas?estado=PROGRAMADA&limit=1'),
         api.get<CountMeta>('/owners/me/salidas?estado=COMPLETADA&limit=1'),
+        api.get<OwnerReviewsKpi>('/owners/me/reviews?limit=1').catch(() => null),
       ])
-        .then(([boats, solicitud, retornos, programadas, completadas]) => {
+        .then(([boats, solicitud, retornos, programadas, completadas, resenas]) => {
           if (!isMounted) return;
           setOwnerKpis({
             totalBoats: boats.length,
@@ -176,6 +183,7 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
             docsAprobados: solicitud.documents.filter((d) => d.status === 'APPROVED').length,
             docsTotal: solicitud.documents.length,
           });
+          setOwnerReviewsKpi(resenas);
         })
         .catch(() => undefined)
         .finally(() => {
@@ -439,6 +447,34 @@ export function RoleDashboardPage({ role }: { role: UserRole }) {
               </div>
             </section>
           </div>
+
+          {role === 'OWNER' && (
+            <section
+              className="nf-panel"
+              aria-labelledby="owner-reviews-title"
+              style={{ marginTop: '1.25rem' }}
+            >
+              <div className="nf-panel-header">
+                <div>
+                  <h2 id="owner-reviews-title">Reseñas de tus lanchas</h2>
+                  <span className="nf-panel-desc">
+                    {ownerReviewsKpi && ownerReviewsKpi.total > 0
+                      ? `Promedio ${ownerReviewsKpi.promedio} ★ · ${ownerReviewsKpi.total} ${
+                          ownerReviewsKpi.total === 1 ? 'reseña' : 'reseñas'
+                        } de turistas`
+                      : 'Todavía no recibiste calificaciones de turistas.'}
+                  </span>
+                </div>
+                <Link to="/owner/resenas" className="nf-period-pill" style={{ textDecoration: 'none' }}>
+                  Ver reseñas
+                </Link>
+              </div>
+              <p className="empty-activity-text">
+                Cuando tus viajes se completen y los turistas califiquen, sus reseñas van a aparecer
+                en tu panel de reputación.
+              </p>
+            </section>
+          )}
 
           {role === 'ADMIN' && (
             <section className="nf-panel nf-recent-panel" aria-labelledby="admin-retornos-title" style={{ marginTop: '1.25rem' }}>

@@ -324,7 +324,8 @@ posterior.
 ### Reseñas del lanchero (`/owners/me/reviews`, OWNER)
 
 `GET /api/v1/owners/me/reviews` devuelve las reseñas de las embarcaciones del lanchero
-autenticado, con `page` y `limit` sobre la lista (orden `createdAt` descendente). La respuesta
+autenticado, con `page` y `limit` sobre la lista (orden `createdAt` descendente) y filtro
+opcional `boatId` para ver solo una embarcación. La respuesta
 incluye:
 
 - `promedio` (number|null) y `total` (number): resumen general de todas sus lanchas.

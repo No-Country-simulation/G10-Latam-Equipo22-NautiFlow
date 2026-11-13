@@ -67,6 +67,9 @@ const OwnerSalidasPage = lazy(() =>
 const OwnerProfilePage = lazy(() =>
   import('./pages/OwnerProfilePage').then((m) => ({ default: m.OwnerProfilePage })),
 );
+const OwnerReviewsPage = lazy(() =>
+  import('./pages/OwnerReviewsPage').then((m) => ({ default: m.OwnerReviewsPage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -152,6 +155,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute role="OWNER">
             <Suspended>
               <OwnerProfilePage />
+            </Suspended>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'owner/resenas',
+        element: (
+          <ProtectedRoute role="OWNER">
+            <Suspended>
+              <OwnerReviewsPage />
             </Suspended>
           </ProtectedRoute>
         ),

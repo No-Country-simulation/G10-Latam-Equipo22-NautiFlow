@@ -63,10 +63,14 @@ export class OwnersService {
 		return this.getMyRequest(userId);
 	}
 
-	async getMyReviews(userId: string, query: PaginationQueryDto) {
+	async getMyReviews(userId: string, query: PaginationQueryDto & { boatId?: string }) {
 		const page = Number(query.page) || 1;
 		const limit = Number(query.limit) || 20;
-		const reviewWhere: Prisma.ReviewWhereInput = { embarcacion: { propietario: { userId } } };
+		const embarcacionFiltro: Prisma.EmbarcacionWhereInput = {
+			propietario: { userId },
+			...(query.boatId ? { id: query.boatId } : {}),
+		};
+		const reviewWhere: Prisma.ReviewWhereInput = { embarcacion: embarcacionFiltro };
 
 		const [agrupado, data, total, lanchas] = await Promise.all([
 			this.prisma.review.groupBy({

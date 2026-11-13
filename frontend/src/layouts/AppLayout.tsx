@@ -138,8 +138,10 @@ export function AppLayout() {
         ? 'Búsqueda y asignación'
         : location.pathname.includes('retornos')
         ? 'Retornos vacíos'
-        : location.pathname.includes('resenas') || location.pathname.includes('estado')
+        : location.pathname.includes('resenas')
         ? 'Reseñas'
+        : location.pathname.includes('estado')
+        ? 'Estado del sistema'
         : location.pathname.includes('salidas')
         ? 'Salidas y tramos'
         : location.pathname.includes('perfil')
@@ -169,7 +171,7 @@ export function AppLayout() {
             { to: '/owner/salidas', label: 'Salidas', icon: CalendarClock },
             { to: '/owner/retornos', label: 'Retornos vacíos', icon: RotateCcw },
             { to: '/owner/perfil', label: 'Mi perfil', icon: UserRound },
-            { to: '/estado', label: 'Reseñas', icon: Star },
+            { to: '/owner/resenas', label: 'Reseñas', icon: Star },
           ];
 
     return (
