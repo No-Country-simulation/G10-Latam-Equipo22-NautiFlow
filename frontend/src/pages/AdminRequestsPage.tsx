@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { PaginationBar } from '../components/PaginationBar';
 import { WavyLoader } from '../components/WavyLoader';
-import { ApiError, api } from '../services/api';
+import { ApiError, api, apiBaseUrl } from '../services/api';
 import type { PageMeta, Paginated } from '../types/api';
 
 interface BoatSummary {
@@ -248,7 +248,7 @@ export function AdminRequestsPage() {
                               <span className="owner-doc-file">{doc.filename}</span>
                               <div className="owner-doc-actions">
                                 <a
-                                  href={`${import.meta.env.VITE_API_URL}/documents/${doc.id}/file`}
+                                  href={`${apiBaseUrl()}/documents/${doc.id}/file`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="doc-link-btn"

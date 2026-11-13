@@ -8,7 +8,14 @@ export class ApiError extends Error {
   }
 }
 
-function getApiUrl(): string {
+/**
+ * Base de la API. En producción (build de la app desplegada) la API se
+ * sirve en el mismo dominio vía proxy (`vercel.json`), por lo que la base
+ * es relativa y la sesión funciona como cookie de primer nivel en
+ * cualquier navegador. En desarrollo se usa `VITE_API_URL`.
+ */
+export function apiBaseUrl(): string {
+  if (import.meta.env.PROD) return '/api/v1';
   const url = import.meta.env.VITE_API_URL;
   if (!url) {
     throw new Error('Falta VITE_API_URL. Copiá .env.example a .env en la raíz del repo.');
@@ -40,7 +47,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (init.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-  const url = `${getApiUrl()}${path}`;
+  const url = `${apiBaseUrl()}${path}`;
   let response: Response;
   try {
     response = await fetch(url, {

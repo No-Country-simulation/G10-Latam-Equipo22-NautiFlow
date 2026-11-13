@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { PaginationBar } from '../components/PaginationBar';
 import { WavyLoader } from '../components/WavyLoader';
-import { ApiError, api } from '../services/api';
+import { ApiError, api, apiBaseUrl } from '../services/api';
 import type { PageMeta, Paginated } from '../types/api';
 
 interface BoatInfo {
@@ -319,7 +319,7 @@ export function AdminVerificationPage() {
                             {doc ? (
                               <div className="doc-action-links">
                                 <a
-                                  href={`${import.meta.env.VITE_API_URL}/documents/${doc.id}/file`}
+                                  href={`${apiBaseUrl()}/documents/${doc.id}/file`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="doc-link-btn"
@@ -445,7 +445,7 @@ export function AdminVerificationPage() {
 
                         <div className="doc-top-actions">
                           <a
-                            href={`${import.meta.env.VITE_API_URL}/documents/${doc.id}/file`}
+                            href={`${apiBaseUrl()}/documents/${doc.id}/file`}
                             target="_blank"
                             rel="noreferrer"
                             className="button button-ghost btn-sm"
