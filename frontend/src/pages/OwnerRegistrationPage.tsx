@@ -43,7 +43,13 @@ export function OwnerRegistrationPage() {
       .catch(() => setZonesError('No pudimos cargar las zonas. Actualizá la página para volver a intentar.'));
   }, []);
 
-  if (sessionLoading) return <p className="session-loading" role="status">Verificando sesión...</p>;
+  if (sessionLoading) {
+    return (
+      <p className="session-loading" role="status" aria-busy="true">
+        <WavyLoader label="Verificando sesión..." />
+      </p>
+    );
+  }
   if (user) return <Navigate to={roleDashboard(user.role)} replace />;
 
   function updateValue(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {

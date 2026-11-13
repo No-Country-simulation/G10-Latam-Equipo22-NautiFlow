@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { WavyLoader } from '../components/WavyLoader';
 
 interface OwnerRequest {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -33,7 +34,13 @@ export function OwnerRequestPage() {
   }, []);
 
   if (error) return <p className="form-error" role="alert">{error}</p>;
-  if (!request) return <p className="session-loading" role="status">Cargando solicitud...</p>;
+  if (!request) {
+    return (
+      <p className="session-loading" role="status" aria-busy="true">
+        <WavyLoader label="Cargando solicitud..." />
+      </p>
+    );
+  }
 
   return (
     <section className="request-page">

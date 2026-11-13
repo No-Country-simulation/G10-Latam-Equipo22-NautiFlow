@@ -228,8 +228,30 @@ h2 {
 }
 
 .session-loading {
-  padding: 3rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  min-height: calc(100vh - 9rem);
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
   color: var(--color-muted);
+}
+
+.session-loading .nf-wavy-wrap {
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.session-loading .nf-wavy-loader::before {
+  height: 64px;
+}
+
+.session-loading .nf-wavy-label {
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
 }
 
 .session-retry {
